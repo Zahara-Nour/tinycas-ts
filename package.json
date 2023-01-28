@@ -13,7 +13,8 @@
 		"build": "rimraf dist && node ./build.js && npm run types",
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"format": "prettier --config .prettierrc 'src/**/*.ts' --write",
-		"lint": "eslint . --ext .ts"
+		"lint": "eslint . --ext .ts",
+		"prepare": "husky install"
 	},
 	"author": "David Le Jolly",
 	"license": "MIT",
@@ -25,14 +26,9 @@
 		"eslint": "^8.32.0",
 		"eslint-config-prettier": "^8.6.0",
 		"eslint-plugin-prettier": "^4.2.1",
-		"husky": "^8.0.3",
+		"husky": "^8.0.0",
 		"prettier": "^2.8.3",
 		"rimraf": "^4.1.2",
 		"typescript": "^4.9.4"
-	},
-	"husky": {
-		"hooks": {
-			"pre-commit": "npm run format && npm run lint"
-		}
 	}
 }
