@@ -1,6 +1,6 @@
 {
-  "compilerOptions": {
-    "emitDeclarationOnly": true,
-    "declaration": true
-  }
+	"compilerOptions": {
+		"emitDeclarationOnly": true,
+		"declaration": true
+	}
 }
