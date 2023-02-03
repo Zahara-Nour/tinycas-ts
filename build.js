@@ -7,11 +7,12 @@ console.log(dependencies)
 esbuild
 	.build({
 		entryPoints: ['src/index.ts'],
-		outdir: 'dist',
+		outfile: 'dist/index.mjs',
+		// outdir: 'dist',
 		bundle: true,
 		sourcemap: true,
 		minify: true,
-		splitting: true,
+		// splitting: true,
 		format: 'esm',
 		target: ['esnext'],
 		external: Object.keys(dependencies ? dependencies : {}).concat(
@@ -21,18 +22,18 @@ esbuild
 	.then(() => console.log('⚡ Done : esm'))
 	.catch(() => process.exit(1))
 
-// esbuild
-// 	.build({
-// 		entryPoints: ['src/index.ts'],
-// 		outfile: 'dist/index.cjs',
-// 		bundle: true,
-// 		sourcemap: true,
-// 		minify: true,
-// 		target: ['esnext'],
-// 		platform: 'node',
-// 		// plugins: [nodeExternalsPlugin()]
-// 	})
-// 	.then(() => console.log('⚡ Done : node'))
-// 	.catch(() => process.exit(1))
+esbuild
+	.build({
+		entryPoints: ['src/index.ts'],
+		outfile: 'dist/index.cjs',
+		bundle: true,
+		sourcemap: true,
+		minify: true,
+		target: ['esnext'],
+		platform: 'node',
+		// plugins: [nodeExternalsPlugin()]
+	})
+	.then(() => console.log('⚡ Done : node'))
+	.catch(() => process.exit(1))
 // Output:
 // { errors: [], warnings: [] }

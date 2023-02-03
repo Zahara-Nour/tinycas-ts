@@ -1,11 +1,12 @@
 {
 	"name": "tinycas-ts",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "A tiny cas",
 	"files": [
 		"dist/*"
 	],
-	"module": "dist/index.js",
+	"main": "dist/index.cjs",
+	"module": "dist/index.mjs",
 	"types": "dist/index.d.ts",
 	"scripts": {
 		"types": " tsc --emitDeclarationOnly --outDir dist",
