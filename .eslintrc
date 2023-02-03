@@ -12,7 +12,8 @@
 		"prettier/prettier": 2
 	},
 	"env": {
-		"node": true
+		"node": true,
+		"jest": true
 	},
 	"ignorePatterns": ["dist", "node_modules"]
 }

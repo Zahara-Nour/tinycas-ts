@@ -1,6 +1,11 @@
 {
 	"compilerOptions": {
 		"emitDeclarationOnly": true,
-		"declaration": true
+		"declaration": true,
+		"target": "ES6",
+		"esModuleInterop": true,
+		"moduleResolution": "node"
+		// "noImplicitThis": true
+		// "allowJs": true
 	}
 }
