@@ -21,18 +21,18 @@ esbuild
 	.then(() => console.log('⚡ Done : esm'))
 	.catch(() => process.exit(1))
 
-esbuild
-	.build({
-		entryPoints: ['src/index.ts'],
-		outfile: 'dist/index.cjs',
-		bundle: true,
-		sourcemap: true,
-		minify: true,
-		target: ['esnext'],
-		platform: 'node',
-		// plugins: [nodeExternalsPlugin()]
-	})
-	.then(() => console.log('⚡ Done : node'))
-	.catch(() => process.exit(1))
+// esbuild
+// 	.build({
+// 		entryPoints: ['src/index.ts'],
+// 		outfile: 'dist/index.cjs',
+// 		bundle: true,
+// 		sourcemap: true,
+// 		minify: true,
+// 		target: ['esnext'],
+// 		platform: 'node',
+// 		// plugins: [nodeExternalsPlugin()]
+// 	})
+// 	.then(() => console.log('⚡ Done : node'))
+// 	.catch(() => process.exit(1))
 // Output:
 // { errors: [], warnings: [] }

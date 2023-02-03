@@ -7,5 +7,7 @@
 		"moduleResolution": "node"
 		// "noImplicitThis": true
 		// "allowJs": true
-	}
+	},
+	"include": ["src/**/*"],
+	"exclude": ["node_modules", "**/*.spec.ts"]
 }
