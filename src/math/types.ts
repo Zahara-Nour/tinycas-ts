@@ -1,4 +1,3 @@
-console.log('module types')
 import Decimal from 'decimal.js'
 
 export type NonEmptyArr<T> = [T, ...T[]]
@@ -33,6 +32,7 @@ export type Lexer = {
 }
 
 export type CopyArg = {
+	unit?: Unit
 	children?: Node[]
 
 	value?: Decimal
@@ -65,7 +65,7 @@ export type CopyArg = {
 }
 
 export type CreateNodeArg = CopyArg & {
-	prototype: ptypes
+	type: types
 }
 
 export type ToStringArg = {
@@ -96,12 +96,12 @@ export type SignedTerm = {
 }
 
 export type Node = {
-	readonly normal: Normal
 	readonly pos: number
 	readonly string: string
 	readonly latex: string
 	readonly texmacs: string
 	readonly root: Node
+	readonly normal: Normal
 	_normal?: Normal
 	type: types
 	parent?: ExpressionWithChildren
@@ -109,7 +109,6 @@ export type Node = {
 	input?: string
 	generated: Node[]
 	substitutionMap?: Record<string, string>
-
 	derivate: (variable?: string) => Node
 	compose: (g: Node, variable?: string) => Node
 	reduce: () => Node
@@ -236,11 +235,51 @@ export type Node = {
 	substitute: (values?: Record<string, string>) => Node
 	matchTemplate: (t: Node) => boolean
 	copyFromString: (withUnit?: boolean) => Node
-	copy: (params?: CopyArg) => Node
+	copy: (params?: Node[]) => Node
+
+	[Symbol.iterator]?: () => IterableIterator<Node>
+	children?: Node[]
+	readonly length?: number
+	readonly first?: Node
+	readonly last?: Node
+
+	sign?: string
+
+	ops?: string[]
+
+	isTrue?: () => boolean
+	isFalse?: () => boolean
+	value?: Decimal
+	boolvalue?: boolean
+
+	nature?: string
+	// INTEGER_TAMPLATE et DECIMAL_TEMPLATE
+	relative?: boolean
+
+	// INTEGER TEMPLATE - LIST_TEMPLATE
+	signed?: boolean
+	excludeMin?: Node
+	excludeMax?: Node
+	exclude?: Node[]
+	excludeDivider?: Node[]
+	excludeMultiple?: Node[]
+	excludeCommonDividersWith?: Node[]
+
+	// VALUE_DECIMAL_TEMPLATE
+	precision?: number
+
+	begin?: string
+	end?: string
+
+	error?: string
+	message?: string
+
+	symbol?: string
+	name?: string
 }
 
 export type ExpressionWithChildren = Node & {
-	[Symbol.iterator](): IterableIterator<Node>
+	[Symbol.iterator]: () => IterableIterator<Node>
 	children: Node[]
 	readonly length: number
 	readonly first: Node
@@ -501,7 +540,7 @@ export type Normal = {
 	reduce: () => Normal
 	add: (e: Normal) => Normal
 	sub: (e: Normal) => Normal
-	mult: (e: Normal) => Normal
+	mult: (e: Normal | string | number | Decimal) => Normal
 	div: (e: Normal) => Normal
 	pow: (e: Normal) => Normal
 	oppose: () => Normal
@@ -555,7 +594,7 @@ export type Unit = {
 	isConvertibleTo: (u: Unit) => boolean
 	getCoefTo: (u: Unit) => Node
 	equalsTo: (u: Unit) => boolean
-	readonly normal: Normal
+	normal: () => Normal
 	_normal?: Normal
 	readonly u: Node
 	_u?: Node
@@ -693,7 +732,7 @@ export function isRelations(e: Node): e is Relations {
 }
 
 export function isEquality(e: Node): e is Equality {
-	return isExpressionWithChildren(e) && e.type === TYPE_RELATIONS
+	return isExpressionWithChildren(e) && e.type === TYPE_EQUALITY
 }
 
 export function isInequalityLess(e: Node): e is InequalityLess {
@@ -953,5 +992,3 @@ export const TYPE_NSUM = 'nsum'
 export const TYPE_NPRODUCT = 'nproduct'
 export const TYPE_NULL_EXPRESSION = 'null expression'
 export const TYPE_NOT_INITALIZED = 'not initialized'
-
-console.log('end module types')

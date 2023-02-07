@@ -5,18 +5,22 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
+			"name": "Debug Jest Tests",
 			"type": "node",
 			"request": "launch",
-			"name": "Launch Program",
-			"skipFiles": ["<node_internals>/**"],
-			"program": "${workspaceFolder}/dist/index.cjs",
-			"outFiles": ["${workspaceFolder}/**/*.js"]
+			"runtimeArgs": [
+				"--inspect-brk",
+				"${workspaceRoot}/node_modules/jest/bin/jest.js",
+				"--runInBand"
+			],
+			"console": "integratedTerminal",
+			"internalConsoleOptions": "neverOpen"
 		},
 		{
 			"type": "node",
 			"request": "launch",
 			"name": "Debug Program",
-			"program": "${workspaceFolder}/debug/src/index.js",
+			"program": "${workspaceFolder}/src/index.ts",
 			"preLaunchTask": "tsc: build - tsconfig-debug.json",
 			"outFiles": ["${workspaceFolder}/debug/**/*.js"]
 		}

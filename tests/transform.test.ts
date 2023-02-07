@@ -182,8 +182,11 @@ describe('Testing sorting terms and factors', () => {
 		['3+5*4', '3+4*5'],
 		['a+b*4+3*2*1', 'a+4*b+1*2*3'],
 
-		['-z^2-2z', '-2*z-z^2'],
-		['-2z-z^2', '-2*z-z^2'],
+		['-z^2-2z', '-2z-z^2'],
+		['-2z-z^2', '-2z-z^2'],
+
+		['-z^2-2z+4*b', '4*b-2z-z^2'],
+		['4*b-2z-z^2', '4*b-2z-z^2'],
 	]
 
 	test.each(t)('%s and %s', (e, expected) => {

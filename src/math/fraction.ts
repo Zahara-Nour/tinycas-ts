@@ -1,5 +1,4 @@
 // const regex = new RegExp('^(\\(?(-?\\d+)(\\.\\d+)?\\)?)(/(-?\\d+))?$')
-console.log('module fraction')
 import Decimal from 'decimal.js'
 import { CreateFractionArg, Fraction, FractionArg } from './types'
 import { pgcdDecimals } from '../utils/utils'
@@ -146,4 +145,3 @@ function fraction(arg: FractionArg): Fraction {
 }
 
 export default fraction
-console.log('end module fraction')

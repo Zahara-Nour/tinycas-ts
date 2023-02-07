@@ -1,4 +1,3 @@
-console.log('module parser')
 import { token, lexer } from './lexer'
 
 import {
@@ -786,4 +785,3 @@ ${(error as Error).message}`
 }
 
 export default parser
-console.log('end module parser')

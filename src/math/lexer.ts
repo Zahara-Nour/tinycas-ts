@@ -115,4 +115,3 @@ export function lexer(exp: string): Lexer {
 		},
 	}
 }
-console.log('end module lexer')

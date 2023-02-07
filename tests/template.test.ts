@@ -17,7 +17,7 @@ describe('Testing matching against Templates', () => {
 		['a', 'a', true],
 		['a', 'b', false],
 		['a', '?', false],
-		['a', 'é', false],
+		['a', '2', false],
 		['a', '-a', false],
 		['a', 'a+3', false],
 		['a', 'a-3', false],

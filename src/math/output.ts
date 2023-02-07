@@ -1,4 +1,3 @@
-console.log('module output')
 import {
 	Node,
 	isLimit,
@@ -153,7 +152,8 @@ export function text(e: Node, options: ToStringArg) {
 		isLn(e) ||
 		isLog(e) ||
 		isExp(e) ||
-		isFloor(e)
+		isFloor(e) ||
+		isAbs(e)
 	) {
 		s = e.type + '(' + e.first.toString(options) + ')'
 	} else if (isBracket(e)) {
@@ -681,4 +681,3 @@ function formatSpaces(num: string) {
 	// if (dec) dec = dec.replace(/(\d)(?<=(?<!\d)(\d{3})+)/g, '$1\\,')
 	return dec ? int + '.' + dec : int
 }
-console.log('end module output')

@@ -1,4 +1,3 @@
-console.log('module transform')
 import {
 	Node,
 	isFunction,
@@ -67,10 +66,7 @@ export function derivate(node: Node, variable = 'x') {
 	if (isFunction(node) && node.first.string !== variable) {
 		const g = node.first
 		// const f = createNode({type:node.type, children:node.children.map(c => math(c.string))})
-		const f = createNode({
-			prototype: Object.getPrototypeOf(node),
-			children: [symbol(variable)],
-		})
+		const f = node.copy([symbol(variable)])
 		const fprime = f.derivate(variable)
 		e = g.derivate(variable).mult(fprime.compose(g, variable))
 	} else if (isNumber(node)) {
@@ -133,9 +129,7 @@ export function reduceFractions(node: Node) {
 	// On considère que les fractions sont composées de nombres positifs. Il faut appeler removeSign avant ?
 
 	let e = isExpressionWithChildren(node)
-		? node.copy({
-				children: node.children.map((child) => child.reduceFractions()),
-		  })
+		? node.copy(node.children.map((child) => child.reduceFractions()))
 		: node
 
 	if (
@@ -162,9 +156,7 @@ export function reduceFractions(node: Node) {
 
 export function removeZerosAndSpaces(node: Node) {
 	let e = isExpressionWithChildren(node)
-		? node.copy({
-				children: node.children.map((child) => child.removeZerosAndSpaces()),
-		  })
+		? node.copy(node.children.map((child) => child.removeZerosAndSpaces()))
 		: math(node.string)
 
 	if (isNumber(node)) {
@@ -177,9 +169,7 @@ export function removeZerosAndSpaces(node: Node) {
 
 export function removeMultOperator(node: Node) {
 	let e = isExpressionWithChildren(node)
-		? node.copy({
-				children: node.children.map((child) => child.removeMultOperator()),
-		  })
+		? node.copy(node.children.map((child) => child.removeMultOperator()))
 		: math(node.string)
 
 	if (
@@ -225,9 +215,7 @@ export function removeNullTerms(node: Node) {
 			e = first.sub(last)
 		}
 	} else if (isExpressionWithChildren(node)) {
-		e = node.copy({
-			children: node.children.map((child) => child.removeNullTerms()),
-		})
+		e = node.copy(node.children.map((child) => child.removeNullTerms()))
 	} else {
 		e = math(node.string)
 	}
@@ -258,12 +246,10 @@ export function removeFactorsOne(node: Node) {
 				e = e.first
 			}
 		} else {
-			e = node.copy({ children: [first, last] })
+			e = node.copy([first, last])
 		}
 	} else if (isExpressionWithChildren(node)) {
-		e = node.copy({
-			children: node.children.map((child) => child.removeFactorsOne()),
-		})
+		e = node.copy(node.children.map((child) => child.removeFactorsOne()))
 	} else {
 		e = math(node.string)
 	}
@@ -276,9 +262,7 @@ export function removeFactorsOne(node: Node) {
 
 export function simplifyNullProducts(node: Node) {
 	let e = isExpressionWithChildren(node)
-		? node.copy({
-				children: node.children.map((child) => child.simplifyNullProducts()),
-		  })
+		? node.copy(node.children.map((child) => child.simplifyNullProducts()))
 		: math(node.string)
 	if (isProduct(node)) {
 		const factors = e.factors
@@ -365,11 +349,11 @@ export function removeUnecessaryBrackets(
 	) {
 		e = node.first.removeUnecessaryBrackets(allowFirstNegativeTerm)
 	} else if (isExpressionWithChildren(node)) {
-		e = node.copy({
-			children: node.children.map((child) =>
+		e = node.copy(
+			node.children.map((child) =>
 				child.removeUnecessaryBrackets(allowFirstNegativeTerm),
 			),
-		})
+		)
 	} else {
 		e = math(node.string)
 	}
@@ -393,9 +377,7 @@ export function shallowShuffleTerms(node: Node) {
 
 export function shuffleTerms(node: Node) {
 	let e = isExpressionWithChildren(node)
-		? node.copy({
-				children: node.children.map((child) => child.shuffleTerms()),
-		  })
+		? node.copy(node.children.map((child) => child.shuffleTerms()))
 		: math(node.string)
 	const terms = e.terms
 	shuffle(terms)
@@ -420,9 +402,7 @@ export function shallowShuffleFactors(node: Node) {
 
 export function shuffleFactors(node: Node) {
 	let e = isExpressionWithChildren(node)
-		? node.copy({
-				children: node.children.map((child) => child.shuffleFactors()),
-		  })
+		? node.copy(node.children.map((child) => child.shuffleFactors()))
 		: math(node.string)
 	const factors = node.factors
 	shuffle(factors)
@@ -435,9 +415,7 @@ export function shuffleFactors(node: Node) {
 
 export function shuffleTermsAndFactors(node: Node) {
 	let e = isExpressionWithChildren(node)
-		? node.copy({
-				children: node.children.map((child) => child.shuffleTermsAndFactors()),
-		  })
+		? node.copy(node.children.map((child) => child.shuffleTermsAndFactors()))
 		: math(node.string)
 	if (e.isProduct()) {
 		e = e.shallowShuffleFactors()
@@ -449,7 +427,7 @@ export function shuffleTermsAndFactors(node: Node) {
 }
 
 export function shallowSortTerms(node: Node) {
-	let e: Node = notdefined('exp not initialized')
+	let e = node
 	if (node.isSum() || node.isDifference()) {
 		const terms = node.terms
 
@@ -457,6 +435,8 @@ export function shallowSortTerms(node: Node) {
 			.filter((term) => term.op === '+')
 			.map((term) => term.term)
 			.sort((a, b) => a.compareTo(b))
+
+		const positivesLength = positives.length
 
 		const negatives = terms
 			.filter((term) => term.op === '-')
@@ -468,15 +448,13 @@ export function shallowSortTerms(node: Node) {
 			positives.forEach((term) => (e = e.add(term)))
 		}
 
-		if (negatives) {
-			if (!e.isIncorrect()) {
+		if (negatives.length) {
+			if (!positivesLength) {
 				e = (negatives.shift() as Node).oppose()
 			}
 			negatives.forEach((term) => (e = e.sub(term)))
 		}
 		e.unit = node.unit
-	} else {
-		e = node
 	}
 
 	return e
@@ -484,9 +462,7 @@ export function shallowSortTerms(node: Node) {
 
 export function sortTerms(node: Node) {
 	let e = isExpressionWithChildren(node)
-		? node.copy({
-				children: node.children.map((child) => child.sortTerms()),
-		  })
+		? node.copy(node.children.map((child) => child.sortTerms()))
 		: math(node.string)
 	if (node.isSum() || node.isDifference()) {
 		e = e.shallowSortTerms()
@@ -512,9 +488,7 @@ export function shallowSortFactors(node: Node) {
 
 export function sortFactors(node: Node) {
 	let e = isExpressionWithChildren(node)
-		? node.copy({
-				children: node.children.map((child) => child.sortFactors()),
-		  })
+		? node.copy(node.children.map((child) => child.sortFactors()))
 		: math(node.string)
 	if (node.isProduct()) {
 		e = e.shallowSortFactors()
@@ -525,9 +499,7 @@ export function sortFactors(node: Node) {
 
 export function sortTermsAndFactors(node: Node) {
 	let e = isExpressionWithChildren(node)
-		? node.copy({
-				children: node.children.map((child) => child.sortTermsAndFactors()),
-		  })
+		? node.copy(node.children.map((child) => child.sortTermsAndFactors()))
 		: math(node.string)
 	if (node.isSum() || node.isDifference()) {
 		e = e.shallowSortTerms()
@@ -542,9 +514,7 @@ export function removeSigns(node: Node) {
 	// sauvegarde du parent
 	const parent = node.parent
 	let e = isExpressionWithChildren(node)
-		? node.copy({
-				children: node.children.map((child) => child.removeSigns()),
-		  })
+		? node.copy(node.children.map((child) => child.removeSigns()))
 		: math(node.string)
 
 	// TODO: est-ce vraiment nécessaire ?
@@ -580,7 +550,7 @@ export function removeSigns(node: Node) {
 		}
 
 		if (e.isProduct()) {
-			e = e.copy({ children: [first, last] })
+			e = e.copy([first, last])
 			// e = first.mult(last)
 		} else if (e.isDivision()) {
 			e = first.div(last)
@@ -666,9 +636,7 @@ export function substitute(node: Node, values: Record<string, string>) {
 			e = substitute(e, values)
 		}
 	} else if (isExpressionWithChildren(node)) {
-		e = node.copy({
-			children: node.children.map((child) => substitute(child, values)),
-		})
+		e = node.copy(node.children.map((child) => substitute(child, values)))
 	} else {
 		e = math(node.string)
 	}
@@ -990,10 +958,7 @@ export function generate(node: Node) {
 	) {
 		e = node
 	} else if (isExpressionWithChildren(node)) {
-		e = node.copy({
-			children: node.children.map((child) => generate(child)),
-		})
+		e = node.copy(node.children.map((child) => generate(child)))
 	}
 	return e
 }
-console.log('end module transform')

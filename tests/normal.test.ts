@@ -341,6 +341,8 @@ describe('Testing normal forms for functions', () => {
 		['abs(0)', '0'],
 		['abs(x)', 'abs(x)'],
 		['abs(-x)', 'abs(-x)'],
+		['abs(2+3)', '5'],
+		['abs(2-3)', '1'],
 
 		['floor(0)', '0'],
 		['floor(1)', '1'],
@@ -349,6 +351,7 @@ describe('Testing normal forms for functions', () => {
 		['floor(-3.2)', '-4'],
 		['floor(3/2)', '1'],
 		['floor(x)', 'floor(x)'],
+		['floor(3+2,5)', '5'],
 
 		['pgcd(1;1)', '1'],
 		['pgcd(42;56)', '14'],

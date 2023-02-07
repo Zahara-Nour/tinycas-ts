@@ -160,13 +160,12 @@ describe('Testing constants', () => {
 })
 
 describe('Test functions evaluation', () => {
-	let t = []
 	test('Function pgcd', () => {
 		const e = math('pgcd(12;18)')
 		expect(e.eval().string).toEqual('6')
 	})
 
-	t = [
+	let t = [
 		['mini(8;5)', '5'],
 		['mini(5;8)', '5'],
 		['mini(2;2)', '2'],

@@ -1,4 +1,3 @@
-console.log('module node')
 import evaluate from './evaluate'
 import fraction from './fraction'
 import { text, latex, texmacs } from './output'
@@ -96,6 +95,7 @@ import {
 	isSum,
 	isSymbol,
 	isTan,
+	isTemplate,
 	isTime,
 	isUnequality,
 	Limit,
@@ -226,669 +226,683 @@ const evalDefaults: EvalArg = {
 	decimal: false,
 }
 
-const pNode: Node = {
-	type: TYPE_NOT_INITALIZED,
-	generated: [],
-	derivate(variable = 'x') {
-		return derivate(this, variable)
-	},
+function createPNode(): Node {
+	return {
+		type: TYPE_NOT_INITALIZED,
+		generated: [],
+		derivate(variable = 'x') {
+			return derivate(this, variable)
+		},
 
-	compose(g: Node, variable = 'x') {
-		return compose(this, g, variable)
-	},
+		get normal() {
+			if (!this._normal) this._normal = normalize(this)
+			return this._normal
+		},
 
-	//  simplifier une fraction numérique
-	reduce() {
-		// la fraction est déj
-		// on simplifie les signes.
-		const b = this.removeSigns()
-		if (isExpressionWithChildren(b)) {
-			const negative = b.isOpposite()
-			const frac = fraction(negative ? b.first.string : b.string).reduce()
+		compose(g: Node, variable = 'x') {
+			return compose(this, g, variable)
+		},
 
-			let result: Node
+		//  simplifier une fraction numérique
+		reduce() {
+			// la fraction est déj
+			// on simplifie les signes.
+			const b = this.removeSigns()
+			if (isExpressionWithChildren(b)) {
+				const negative = b.isOpposite()
+				const frac = fraction(negative ? b.first.string : b.string).reduce()
 
-			if (frac.n.equals(0)) {
-				result = number(0)
-			} else if (frac.d.equals(1)) {
-				result = frac.s === 1 ? number(frac.n) : opposite([number(frac.n)])
-			} else {
-				result = quotient([number(frac.n), number(frac.d)])
-				if (frac.s === -1) {
-					result = opposite([result])
-				}
-			}
+				let result: Node
 
-			if (negative) {
-				if (isOpposite(result)) {
-					result = result.first
+				if (frac.n.equals(0)) {
+					result = number(0)
+				} else if (frac.d.equals(1)) {
+					result = frac.s === 1 ? number(frac.n) : opposite([number(frac.n)])
 				} else {
-					result = opposite([result])
+					result = quotient([number(frac.n), number(frac.d)])
+					if (frac.s === -1) {
+						result = opposite([result])
+					}
 				}
+
+				if (negative) {
+					if (isOpposite(result)) {
+						result = result.first
+					} else {
+						result = opposite([result])
+					}
+				}
+				return result
+			} else {
+				return this
+			}
+		},
+
+		isCorrect() {
+			return this.type !== TYPE_ERROR
+		},
+		isIncorrect() {
+			return this.type === TYPE_ERROR
+		},
+		isRelations() {
+			return this.type === TYPE_RELATIONS
+		},
+		isEquality() {
+			return this.type === TYPE_EQUALITY
+		},
+		isUnequality() {
+			return this.type === TYPE_UNEQUALITY
+		},
+		isInequality() {
+			return (
+				this.type === TYPE_INEQUALITY_LESS ||
+				this.type === TYPE_INEQUALITY_LESSOREQUAL ||
+				this.type === TYPE_INEQUALITY_MORE ||
+				this.type === TYPE_INEQUALITY_MOREOREQUAL
+			)
+		},
+
+		isBoolean() {
+			return this.type === TYPE_BOOLEAN
+		},
+
+		isSum() {
+			return this.type === TYPE_SUM
+		},
+		isDifference() {
+			return this.type === TYPE_DIFFERENCE
+		},
+		isOpposite() {
+			return this.type === TYPE_OPPOSITE
+		},
+		isPositive() {
+			return this.type === TYPE_POSITIVE
+		},
+		isProduct() {
+			return (
+				this.type === TYPE_PRODUCT ||
+				this.type === TYPE_PRODUCT_IMPLICIT ||
+				this.type === TYPE_PRODUCT_POINT
+			)
+		},
+		isDivision() {
+			return this.type === TYPE_DIVISION
+		},
+		isQuotient() {
+			return this.type === TYPE_QUOTIENT
+		},
+		isPower() {
+			return this.type === TYPE_POWER
+		},
+		isRadical() {
+			return this.type === TYPE_RADICAL
+		},
+		isPGCD() {
+			return this.type === TYPE_GCD
+		},
+		isMax() {
+			return this.type === TYPE_MAX
+		},
+		isMaxP() {
+			return this.type === TYPE_MAXP
+		},
+		isMin() {
+			return this.type === TYPE_MIN
+		},
+		isMinP() {
+			return this.type === TYPE_MINP
+		},
+		isMod() {
+			return this.type === TYPE_MOD
+		},
+		isCos() {
+			return this.type === TYPE_COS
+		},
+		isSin() {
+			return this.type === TYPE_SIN
+		},
+		isTan() {
+			return this.type === TYPE_TAN
+		},
+		isLn() {
+			return this.type === TYPE_LN
+		},
+		isLog() {
+			return this.type === TYPE_LOG
+		},
+		isExp() {
+			return this.type === TYPE_EXP
+		},
+		isFloor() {
+			return this.type === TYPE_FLOOR
+		},
+		isAbs() {
+			return this.type === TYPE_ABS
+		},
+		isNumber() {
+			return this.type === TYPE_NUMBER
+		},
+		isBracket() {
+			return this.type === TYPE_BRACKET
+		},
+		isSymbol() {
+			return this.type === TYPE_SYMBOL
+		},
+		isSegmentLength() {
+			return this.type === TYPE_SEGMENT_LENGTH
+		},
+		isTemplate() {
+			return this.type === TYPE_TEMPLATE
+		},
+		isHole() {
+			return this.type === TYPE_HOLE
+		},
+		isTime() {
+			return this.type === TYPE_TIME
+		},
+		isLimit() {
+			return this.type === TYPE_LIMIT
+		},
+		isChild() {
+			return !!this.parent
+		},
+		isIdentifier() {
+			return this.type === TYPE_IDENTIFIER
+		},
+
+		isFirst() {
+			return !!this.parent && this.parent.children.indexOf(this) === 0
+		},
+
+		isLast() {
+			return !!this.parent && this.parent.children.indexOf(this) === 1
+		},
+
+		isFunction() {
+			return (
+				this.isRadical() ||
+				this.isPGCD() ||
+				this.isMin() ||
+				this.isMinP() ||
+				this.isMax() ||
+				this.isMaxP() ||
+				this.isMod() ||
+				this.isCos() ||
+				this.isSin() ||
+				this.isTan() ||
+				this.isLog() ||
+				this.isLn() ||
+				this.isExp() ||
+				this.isFloor() ||
+				this.isAbs()
+			)
+		},
+
+		isDuration() {
+			return (
+				this.isTime() || (!!this.unit && this.unit.isConvertibleTo(unit('s')))
+			)
+		},
+
+		isLength() {
+			return !!this.unit && this.unit.isConvertibleTo(unit('m'))
+		},
+
+		isMass() {
+			return !!this.unit && this.unit.isConvertibleTo(unit('g'))
+		},
+
+		isVolume() {
+			return (
+				!!this.unit &&
+				(this.unit.isConvertibleTo(unit('m').mult(unit('m')).mult(unit('m'))) ||
+					this.unit.isConvertibleTo(unit('L')))
+			)
+		},
+
+		compareTo(e: Node) {
+			return compare(this, e)
+		},
+
+		isLowerThan(e: Node | string | number) {
+			// TODO: wtf !!!!!
+			const e1 = this.normal.node
+			const e2 =
+				typeof e === 'string' || typeof e === 'number'
+					? math(e).normal.node
+					: e.normal.node
+			let result: boolean
+			try {
+				result = fraction(e1).isLowerThan(fraction(e2))
+			} catch (err) {
+				result = e1
+					.eval({ decimal: true })
+					.isLowerThan(e2.eval({ decimal: true }))
 			}
 			return result
-		} else {
-			return this
-		}
-	},
+		},
 
-	isCorrect() {
-		return this.type !== TYPE_ERROR
-	},
-	isIncorrect() {
-		return this.type === TYPE_ERROR
-	},
-	isRelations() {
-		return this.type === TYPE_RELATIONS
-	},
-	isEquality(this: Node) {
-		return this.type === TYPE_EQUALITY
-	},
-	isUnequality(this: Node) {
-		return this.type === TYPE_UNEQUALITY
-	},
-	isInequality(this: Node) {
-		return (
-			this.type === TYPE_INEQUALITY_LESS ||
-			this.type === TYPE_INEQUALITY_LESSOREQUAL ||
-			this.type === TYPE_INEQUALITY_MORE ||
-			this.type === TYPE_INEQUALITY_MOREOREQUAL
-		)
-	},
+		isLowerOrEqual(e: Node | string | number) {
+			if (typeof e === 'string' || typeof e === 'number') {
+				e = math(e)
+			}
+			return this.isLowerThan(e) || this.equals(e)
+		},
 
-	isBoolean(this: Node) {
-		return this.type === TYPE_BOOLEAN
-	},
+		isGreaterThan(e: Node | string | number) {
+			if (typeof e === 'string' || typeof e === 'number') {
+				e = math(e)
+			}
+			return e.isLowerThan(this)
+		},
 
-	isSum(this: Node) {
-		return this.type === TYPE_SUM
-	},
-	isDifference(this: Node) {
-		return this.type === TYPE_DIFFERENCE
-	},
-	isOpposite(this: Node) {
-		return this.type === TYPE_OPPOSITE
-	},
-	isPositive(this: Node) {
-		return this.type === TYPE_POSITIVE
-	},
-	isProduct(this: Node) {
-		return (
-			this.type === TYPE_PRODUCT ||
-			this.type === TYPE_PRODUCT_IMPLICIT ||
-			this.type === TYPE_PRODUCT_POINT
-		)
-	},
-	isDivision(this: Node) {
-		return this.type === TYPE_DIVISION
-	},
-	isQuotient(this: Node) {
-		return this.type === TYPE_QUOTIENT
-	},
-	isPower(this: Node) {
-		return this.type === TYPE_POWER
-	},
-	isRadical(this: Node) {
-		return this.type === TYPE_RADICAL
-	},
-	isPGCD(this: Node) {
-		return this.type === TYPE_GCD
-	},
-	isMax(this: Node) {
-		return this.type === TYPE_MAX
-	},
-	isMaxP(this: Node) {
-		return this.type === TYPE_MAXP
-	},
-	isMin(this: Node) {
-		return this.type === TYPE_MIN
-	},
-	isMinP(this: Node) {
-		return this.type === TYPE_MINP
-	},
-	isMod(this: Node) {
-		return this.type === TYPE_MOD
-	},
-	isCos(this: Node) {
-		return this.type === TYPE_COS
-	},
-	isSin(this: Node) {
-		return this.type === TYPE_SIN
-	},
-	isTan(this: Node) {
-		return this.type === TYPE_TAN
-	},
-	isLn(this: Node) {
-		return this.type === TYPE_LN
-	},
-	isLog(this: Node) {
-		return this.type === TYPE_LOG
-	},
-	isExp(this: Node) {
-		return this.type === TYPE_EXP
-	},
-	isFloor(this: Node) {
-		return this.type === TYPE_FLOOR
-	},
-	isAbs(this: Node) {
-		return this.type === TYPE_ABS
-	},
-	isNumber(this: Node) {
-		return this.type === TYPE_NUMBER
-	},
-	isBracket(this: Node) {
-		return this.type === TYPE_BRACKET
-	},
-	isSymbol(this: Node) {
-		return this.type === TYPE_SYMBOL
-	},
-	isSegmentLength(this: Node) {
-		return this.type === TYPE_SEGMENT_LENGTH
-	},
-	isTemplate(this: Node) {
-		return this.type === TYPE_TEMPLATE
-	},
-	isHole(this: Node) {
-		return this.type === TYPE_HOLE
-	},
-	isTime(this: Node) {
-		return this.type === TYPE_TIME
-	},
-	isLimit(this: Node) {
-		return this.type === TYPE_LIMIT
-	},
-	isChild(this: Node) {
-		return !!this.parent
-	},
-	isIdentifier(this: Node) {
-		return this.type === TYPE_IDENTIFIER
-	},
+		isGreaterOrEqual(e: Node | string | number) {
+			if (typeof e === 'string' || typeof e === 'number') {
+				e = math(e)
+			}
+			return this.isGreaterThan(e) || this.equals(e)
+		},
 
-	isFirst(this: Node) {
-		return !!this.parent && this.parent.children.indexOf(this) === 0
-	},
+		isOne() {
+			return this.toString({ displayUnit: false }) === '1'
+		},
 
-	isLast(this: Node) {
-		return !!this.parent && this.parent.children.indexOf(this) === 1
-	},
+		isMinusOne() {
+			return this.string === '-1'
+		},
 
-	isFunction(this: Node) {
-		return (
-			this.isRadical() ||
-			this.isPGCD() ||
-			this.isMin() ||
-			this.isMinP() ||
-			this.isMax() ||
-			this.isMaxP() ||
-			this.isMod() ||
-			this.isCos() ||
-			this.isSin() ||
-			this.isTan() ||
-			this.isLog() ||
-			this.isLn() ||
-			this.isExp() ||
-			this.isFloor() ||
-			this.isAbs()
-		)
-	},
+		isZero() {
+			return this.toString({ displayUnit: false }) === '0'
+		},
 
-	isDuration(this: Node) {
-		return (
-			this.isTime() || (!!this.unit && this.unit.isConvertibleTo(unit('s')))
-		)
-	},
+		equalsZero() {
+			return this.eval().isZero()
+		},
 
-	isLength(this: Node) {
-		return !!this.unit && this.unit.isConvertibleTo(unit('m'))
-	},
+		strictlyEquals(e: Node) {
+			return this.string === e.string
+		},
 
-	isMass(this: Node) {
-		return !!this.unit && this.unit.isConvertibleTo(unit('g'))
-	},
-
-	isVolume(this: Node) {
-		return (
-			!!this.unit &&
-			(this.unit.isConvertibleTo(unit('m').mult(unit('m')).mult(unit('m'))) ||
-				this.unit.isConvertibleTo(unit('L')))
-		)
-	},
-
-	compareTo(this: Node, e: Node) {
-		return compare(this, e)
-	},
-
-	isLowerThan(this: Node, e: Node | string | number) {
-		// TODO: wtf !!!!!
-		const e1 = this.normal.node
-		const e2 =
-			typeof e === 'string' || typeof e === 'number'
-				? math(e).normal.node
-				: e.normal.node
-		let result: boolean
-		try {
-			result = fraction(e1).isLowerThan(fraction(e2))
-		} catch (err) {
-			result = e1
-				.eval({ decimal: true })
-				.isLowerThan(e2.eval({ decimal: true }))
-		}
-		return result
-	},
-
-	isLowerOrEqual(this: Node, e: Node | string | number) {
-		if (typeof e === 'string' || typeof e === 'number') {
-			e = math(e)
-		}
-		return this.isLowerThan(e) || this.equals(e)
-	},
-
-	isGreaterThan(this: Node, e: Node | string | number) {
-		if (typeof e === 'string' || typeof e === 'number') {
-			e = math(e)
-		}
-		return e.isLowerThan(this)
-	},
-
-	isGreaterOrEqual(this: Node, e: Node | string | number) {
-		if (typeof e === 'string' || typeof e === 'number') {
-			e = math(e)
-		}
-		return this.isGreaterThan(e) || this.equals(e)
-	},
-
-	isOne(this: Node) {
-		return this.toString({ displayUnit: false }) === '1'
-	},
-
-	isMinusOne(this: Node) {
-		return this.string === '-1'
-	},
-
-	isZero(this: Node) {
-		return this.toString({ displayUnit: false }) === '0'
-	},
-
-	equalsZero(this: Node) {
-		return this.eval().isZero()
-	},
-
-	strictlyEquals(this: Node, e: Node) {
-		return this.string === e.string
-	},
-
-	equals(this: Node, exp: Node | string | number) {
-		let e: Node
-		if (typeof exp === 'string' || typeof exp === 'number') {
-			e = math(exp)
-		} else {
-			e = exp
-		}
-		// TODO: A revoir
-		if (isEquality(this)) {
-			return (
-				isEquality(e) &&
-				((this.first.equals(e.first) && this.last.equals(e.last)) ||
-					(this.first.equals(e.last) && this.last.equals(e.first)))
-			)
-		} else if (isInequalityLess(this)) {
-			return (
-				(isInequalityLess(e) &&
-					this.first.equals(e.first) &&
-					this.last.equals(e.last)) ||
-				(isInequalityMore(e) &&
-					this.first.equals(e.last) &&
-					this.last.equals(e.first))
-			)
-		} else if (isInequalityLessOrEqual(this)) {
-			return (
-				(isInequalityLessOrEqual(e) &&
-					this.first.equals(e.first) &&
-					this.last.equals(e.last)) ||
-				(isInequalityMoreOrEQual(e) &&
-					this.first.equals(e.last) &&
-					this.last.equals(e.first))
-			)
-		} else if (isInequalityMore(this)) {
-			return (
-				(isInequalityMore(e) &&
-					this.first.equals(e.first) &&
-					this.last.equals(e.last)) ||
-				(isInequalityLess(e) &&
-					this.first.equals(e.last) &&
-					this.last.equals(e.first))
-			)
-		} else if (isInequalityMoreOrEQual(this)) {
-			return (
-				(isInequalityMoreOrEQual(e) &&
-					this.first.equals(e.first) &&
-					this.last.equals(e.last)) ||
-				(isInequalityLessOrEqual(e) &&
-					this.first.equals(e.last) &&
-					this.last.equals(e.first))
-			)
-		} else {
-			return this.normal.string === e.normal.string
-		}
-	},
-
-	isSameQuantityType(this: Node, e: Node) {
-		return (!this.unit && !e.unit) || this.normal.isSameQuantityType(e.normal)
-	},
-
-	// recusirvly gets sum terms (with signs)
-	get terms() {
-		let left: NonEmptyArr<SignedTerm>
-		let right: NonEmptyArr<SignedTerm>
-		let signedTerm: SignedTerm
-
-		if (isSum(this)) {
-			if (isPositive(this.first)) {
-				signedTerm = { op: '+', term: this.first.first }
-				left = [signedTerm]
-			} else if (isOpposite(this.first)) {
-				signedTerm = { op: '-', term: this.first.first }
-				left = [signedTerm]
+		equals(exp: Node | string | number) {
+			let e: Node
+			if (typeof exp === 'string' || typeof exp === 'number') {
+				e = math(exp)
 			} else {
-				left = this.first.terms
+				e = exp
 			}
-			signedTerm = { op: '+', term: this.last }
-			right = [signedTerm]
-			return left.concat(right) as NonEmptyArr<SignedTerm>
-		} else if (isDifference(this)) {
-			if (isPositive(this.first)) {
-				signedTerm = { op: '+', term: this.first.first }
-				left = [signedTerm]
-			} else if (isOpposite(this.first)) {
-				signedTerm = { op: '-', term: this.first.first }
-				left = [signedTerm]
+			// TODO: A revoir
+			if (isEquality(this)) {
+				return (
+					isEquality(e) &&
+					((this.first.equals(e.first) && this.last.equals(e.last)) ||
+						(this.first.equals(e.last) && this.last.equals(e.first)))
+				)
+			} else if (isInequalityLess(this)) {
+				return (
+					(isInequalityLess(e) &&
+						this.first.equals(e.first) &&
+						this.last.equals(e.last)) ||
+					(isInequalityMore(e) &&
+						this.first.equals(e.last) &&
+						this.last.equals(e.first))
+				)
+			} else if (isInequalityLessOrEqual(this)) {
+				return (
+					(isInequalityLessOrEqual(e) &&
+						this.first.equals(e.first) &&
+						this.last.equals(e.last)) ||
+					(isInequalityMoreOrEQual(e) &&
+						this.first.equals(e.last) &&
+						this.last.equals(e.first))
+				)
+			} else if (isInequalityMore(this)) {
+				return (
+					(isInequalityMore(e) &&
+						this.first.equals(e.first) &&
+						this.last.equals(e.last)) ||
+					(isInequalityLess(e) &&
+						this.first.equals(e.last) &&
+						this.last.equals(e.first))
+				)
+			} else if (isInequalityMoreOrEQual(this)) {
+				return (
+					(isInequalityMoreOrEQual(e) &&
+						this.first.equals(e.first) &&
+						this.last.equals(e.last)) ||
+					(isInequalityLessOrEqual(e) &&
+						this.first.equals(e.last) &&
+						this.last.equals(e.first))
+				)
 			} else {
-				left = this.first.terms
+				return this.normal.string === e.normal.string
 			}
-			signedTerm = { op: '-', term: this.last }
-			right = [signedTerm]
-			return left.concat(right) as NonEmptyArr<SignedTerm>
-		} else {
-			signedTerm = { op: '+', term: this }
-			return [signedTerm] as NonEmptyArr<SignedTerm>
-		}
-	},
+		},
 
-	// recusirvly gets product factors
-	get factors() {
-		if (isProduct(this)) {
-			const left: NonEmptyArr<Node> = this.first.factors
-			const right: NonEmptyArr<Node> = this.last.factors
-			return left.concat(right) as NonEmptyArr<Node>
-		} else {
-			return [this] as NonEmptyArr<Node>
-		}
-	},
+		isSameQuantityType(e: Node) {
+			// return (!this.unit && !e.unit) || this.normal.isSameQuantityType(e.normal)
+			return this.normal.isSameQuantityType(e.normal)
+		},
 
-	get pos() {
-		return this.parent ? this.parent.children.indexOf(this) : 0
-	},
+		// recusirvly gets sum terms (with signs)
+		get terms() {
+			let left: NonEmptyArr<SignedTerm>
+			let right: NonEmptyArr<SignedTerm>
+			let signedTerm: SignedTerm
 
-	toString(params?: ToStringArg) {
-		return text(this, { ...toStringDefaults, ...(params || {}) })
-	},
-
-	get string() {
-		return this.toString()
-	},
-
-	toLatex(params?: ToLatexArg) {
-		return latex(this, { ...toLatexDefaults, ...(params || {}) })
-	},
-
-	get latex() {
-		return this.toLatex()
-	},
-
-	toTexmacs(params?: ToTexmacsArg) {
-		return texmacs(this, { ...toTexmacsDefaults, ...(params || {}) })
-	},
-
-	get texmacs() {
-		return this.toTexmacs()
-	},
-
-	get root() {
-		if (this.parent) {
-			return this.parent.root
-		} else {
-			return this
-		}
-	},
-
-	isInt() {
-		// trick pour tester si un nombre est un entier
-		// return this.isNumber() && (this.value | 0) === this.value
-		return isNumber(this) && this.value.isInt()
-	},
-
-	isEven() {
-		return isInt(this) && this.value.mod(2).equals(0)
-	},
-
-	isOdd() {
-		return isInt(this) && this.value.mod(2).equals(1)
-	},
-
-	isNumeric() {
-		return (
-			isNumber(this) ||
-			(isExpressionWithChildren(this) &&
-				this.children.every((child) => child.isNumeric()))
-		)
-	},
-
-	add(exp: Node | string | number | Decimal) {
-		const e = convertToExp(exp)
-		return sum([this, e])
-	},
-
-	sub(exp: Node | string | number | Decimal) {
-		const e = convertToExp(exp)
-		return difference([this, e])
-	},
-
-	mult(
-		exp: Node | string | number | Decimal,
-		type:
-			| typeof TYPE_PRODUCT
-			| typeof TYPE_PRODUCT_IMPLICIT
-			| typeof TYPE_PRODUCT_POINT = TYPE_PRODUCT,
-	) {
-		const e = convertToExp(exp)
-		if (type === TYPE_PRODUCT) {
-			return product([this, e])
-		} else if (type === TYPE_PRODUCT_IMPLICIT) {
-			return productImplicit([this, e])
-		} else {
-			return productPoint([this, e])
-		}
-	},
-
-	div(exp: Node | string | number | Decimal) {
-		const e = convertToExp(exp)
-		return division([this, e])
-	},
-
-	frac(exp: Node | string | number | Decimal) {
-		const e = convertToExp(exp)
-		return quotient([this, e])
-	},
-
-	oppose() {
-		return opposite([this])
-	},
-
-	inverse() {
-		return quotient([number(1), this])
-	},
-
-	radical() {
-		return radical([this])
-	},
-
-	positive() {
-		return positive([this])
-	},
-
-	bracket() {
-		return bracket([this])
-	},
-
-	pow(exp: Node | string | number | Decimal) {
-		const e = convertToExp(exp)
-		return power([this, e])
-	},
-
-	floor() {
-		return floor([this])
-	},
-
-	mod(exp: Node | string | number | Decimal) {
-		const e = convertToExp(exp)
-		return mod([this, e])
-	},
-
-	abs() {
-		return abs([this])
-	},
-
-	exp() {
-		return exp([this])
-	},
-
-	ln() {
-		return ln([this])
-	},
-
-	log() {
-		return log([this])
-	},
-
-	sin() {
-		return sin([this])
-	},
-
-	cos() {
-		return cos([this])
-	},
-
-	shallowShuffleTerms() {
-		if (isSum(this) || isDifference(this)) {
-			return shallowShuffleTerms(this)
-		} else {
-			return this
-		}
-	},
-
-	shallowShuffleFactors() {
-		if (isProduct(this)) {
-			return shallowShuffleFactors(this)
-		} else {
-			return this
-		}
-	},
-
-	shuffleTerms() {
-		return shuffleTerms(this)
-	},
-
-	shuffleFactors() {
-		return shuffleFactors(this)
-	},
-
-	shuffleTermsAndFactors() {
-		return shuffleTermsAndFactors(this)
-	},
-
-	sortTerms() {
-		return sortTerms(this)
-	},
-
-	shallowSortTerms() {
-		return shallowSortTerms(this)
-	},
-
-	sortFactors() {
-		return sortFactors(this)
-	},
-
-	shallowSortFactors() {
-		return shallowSortFactors(this)
-	},
-
-	sortTermsAndFactors() {
-		return sortTermsAndFactors(this)
-	},
-
-	reduceFractions() {
-		return reduceFractions(this)
-	},
-
-	removeMultOperator() {
-		return removeMultOperator(this)
-	},
-
-	removeUnecessaryBrackets(allowFirstNegativeTerm = false) {
-		return removeUnecessaryBrackets(this, allowFirstNegativeTerm)
-	},
-
-	removeZerosAndSpaces() {
-		return removeZerosAndSpaces(this)
-	},
-
-	removeSigns() {
-		return removeSigns(this)
-	},
-
-	removeNullTerms() {
-		return removeNullTerms(this)
-	},
-
-	removeFactorsOne() {
-		return removeFactorsOne(this)
-	},
-
-	simplifyNullProducts() {
-		return simplifyNullProducts(this)
-	},
-
-	searchUnecessaryZeros() {
-		if (isNumber(this)) {
-			const regexs = [/^0\d+/, /[.,]\d*0$/]
-			const input = this.input
-			return regexs.some((regex) => input.replace(/ /g, '').match(regex))
-		} else if (isExpressionWithChildren(this)) {
-			return this.children.some((child) => child.searchUnecessaryZeros())
-		} else {
-			return false
-		}
-	},
-
-	searchMisplacedSpaces() {
-		if (isNumber(this)) {
-			const [int, dec] = this.input.replace(',', '.').split('.')
-			let regexs = [/\d{4}/, /\s$/, /\s\d{2}$/, /\s\d{2}\s/, /\s\d$/, /\s\d\s/]
-			if (regexs.some((regex) => int.match(regex))) return true
-
-			if (dec) {
-				regexs = [/\d{4}/, /^\s/, /^\d{2}\s/, /\s\d{2}\s/, /^\d\s/, /\s\d\s/]
-				if (regexs.some((regex) => dec.match(regex))) return true
+			if (isSum(this)) {
+				if (isPositive(this.first)) {
+					signedTerm = { op: '+', term: this.first.first }
+					left = [signedTerm]
+				} else if (isOpposite(this.first)) {
+					signedTerm = { op: '-', term: this.first.first }
+					left = [signedTerm]
+				} else {
+					left = this.first.terms
+				}
+				signedTerm = { op: '+', term: this.last }
+				right = [signedTerm]
+				return left.concat(right) as NonEmptyArr<SignedTerm>
+			} else if (isDifference(this)) {
+				if (isPositive(this.first)) {
+					signedTerm = { op: '+', term: this.first.first }
+					left = [signedTerm]
+				} else if (isOpposite(this.first)) {
+					signedTerm = { op: '-', term: this.first.first }
+					left = [signedTerm]
+				} else {
+					left = this.first.terms
+				}
+				signedTerm = { op: '-', term: this.last }
+				right = [signedTerm]
+				return left.concat(right) as NonEmptyArr<SignedTerm>
+			} else {
+				signedTerm = { op: '+', term: this }
+				return [signedTerm] as NonEmptyArr<SignedTerm>
 			}
-			return false
-		} else if (isExpressionWithChildren(this)) {
-			return this.children.some((child) => child.searchMisplacedSpaces())
-		} else {
-			return false
-		}
-	},
+		},
 
-	/* 
+		// recusirvly gets product factors
+		get factors() {
+			if (isProduct(this)) {
+				const left: NonEmptyArr<Node> = this.first.factors
+				const right: NonEmptyArr<Node> = this.last.factors
+				return left.concat(right) as NonEmptyArr<Node>
+			} else {
+				return [this] as NonEmptyArr<Node>
+			}
+		},
+
+		get pos() {
+			return this.parent ? this.parent.children.indexOf(this) : 0
+		},
+
+		toString(params?: ToStringArg) {
+			return text(this, { ...toStringDefaults, ...(params || {}) })
+		},
+
+		get string() {
+			return this.toString()
+		},
+
+		toLatex(params?: ToLatexArg) {
+			return latex(this, { ...toLatexDefaults, ...(params || {}) })
+		},
+
+		get latex() {
+			return this.toLatex()
+		},
+
+		toTexmacs(params?: ToTexmacsArg) {
+			return texmacs(this, { ...toTexmacsDefaults, ...(params || {}) })
+		},
+
+		get texmacs() {
+			return this.toTexmacs()
+		},
+
+		get root() {
+			if (this.parent) {
+				return this.parent.root
+			} else {
+				return this
+			}
+		},
+
+		isInt() {
+			// trick pour tester si un nombre est un entier
+			// return this.isNumber() && (this.value | 0) === this.value
+			return isNumber(this) && this.value.isInt()
+		},
+
+		isEven() {
+			return isInt(this) && this.value.mod(2).equals(0)
+		},
+
+		isOdd() {
+			return isInt(this) && this.value.mod(2).equals(1)
+		},
+
+		isNumeric() {
+			return (
+				isNumber(this) ||
+				(isExpressionWithChildren(this) &&
+					this.children.every((child) => child.isNumeric()))
+			)
+		},
+
+		add(exp: Node | string | number | Decimal) {
+			const e = convertToExp(exp)
+			return sum([this, e])
+		},
+
+		sub(exp: Node | string | number | Decimal) {
+			const e = convertToExp(exp)
+			return difference([this, e])
+		},
+
+		mult(
+			exp: Node | string | number | Decimal,
+			type:
+				| typeof TYPE_PRODUCT
+				| typeof TYPE_PRODUCT_IMPLICIT
+				| typeof TYPE_PRODUCT_POINT = TYPE_PRODUCT,
+		) {
+			const e = convertToExp(exp)
+			if (type === TYPE_PRODUCT) {
+				return product([this, e])
+			} else if (type === TYPE_PRODUCT_IMPLICIT) {
+				return productImplicit([this, e])
+			} else {
+				return productPoint([this, e])
+			}
+		},
+
+		div(exp: Node | string | number | Decimal) {
+			const e = convertToExp(exp)
+			return division([this, e])
+		},
+
+		frac(exp: Node | string | number | Decimal) {
+			const e = convertToExp(exp)
+			return quotient([this, e])
+		},
+
+		oppose() {
+			return opposite([this])
+		},
+
+		inverse() {
+			return quotient([number(1), this])
+		},
+
+		radical() {
+			return radical([this])
+		},
+
+		positive() {
+			return positive([this])
+		},
+
+		bracket() {
+			return bracket([this])
+		},
+
+		pow(exp: Node | string | number | Decimal) {
+			const e = convertToExp(exp)
+			return power([this, e])
+		},
+
+		floor() {
+			return floor([this])
+		},
+
+		mod(exp: Node | string | number | Decimal) {
+			const e = convertToExp(exp)
+			return mod([this, e])
+		},
+
+		abs() {
+			return abs([this])
+		},
+
+		exp() {
+			return exp([this])
+		},
+
+		ln() {
+			return ln([this])
+		},
+
+		log() {
+			return log([this])
+		},
+
+		sin() {
+			return sin([this])
+		},
+
+		cos() {
+			return cos([this])
+		},
+
+		shallowShuffleTerms() {
+			if (isSum(this) || isDifference(this)) {
+				return shallowShuffleTerms(this)
+			} else {
+				return this
+			}
+		},
+
+		shallowShuffleFactors() {
+			if (isProduct(this)) {
+				return shallowShuffleFactors(this)
+			} else {
+				return this
+			}
+		},
+
+		shuffleTerms() {
+			return shuffleTerms(this)
+		},
+
+		shuffleFactors() {
+			return shuffleFactors(this)
+		},
+
+		shuffleTermsAndFactors() {
+			return shuffleTermsAndFactors(this)
+		},
+
+		sortTerms() {
+			return sortTerms(this)
+		},
+
+		shallowSortTerms() {
+			return shallowSortTerms(this)
+		},
+
+		sortFactors() {
+			return sortFactors(this)
+		},
+
+		shallowSortFactors() {
+			return shallowSortFactors(this)
+		},
+
+		sortTermsAndFactors() {
+			return sortTermsAndFactors(this)
+		},
+
+		reduceFractions() {
+			return reduceFractions(this)
+		},
+
+		removeMultOperator() {
+			return removeMultOperator(this)
+		},
+
+		removeUnecessaryBrackets(allowFirstNegativeTerm = false) {
+			return removeUnecessaryBrackets(this, allowFirstNegativeTerm)
+		},
+
+		removeZerosAndSpaces() {
+			return removeZerosAndSpaces(this)
+		},
+
+		removeSigns() {
+			return removeSigns(this)
+		},
+
+		removeNullTerms() {
+			return removeNullTerms(this)
+		},
+
+		removeFactorsOne() {
+			return removeFactorsOne(this)
+		},
+
+		simplifyNullProducts() {
+			return simplifyNullProducts(this)
+		},
+
+		searchUnecessaryZeros() {
+			if (isNumber(this)) {
+				const regexs = [/^0\d+/, /[.,]\d*0$/]
+				const input = this.input
+				return regexs.some((regex) => input.replace(/ /g, '').match(regex))
+			} else if (isExpressionWithChildren(this)) {
+				return this.children.some((child) => child.searchUnecessaryZeros())
+			} else {
+				return false
+			}
+		},
+
+		searchMisplacedSpaces() {
+			if (isNumber(this)) {
+				const [int, dec] = this.input.replace(',', '.').split('.')
+				let regexs = [
+					/\d{4}/,
+					/\s$/,
+					/\s\d{2}$/,
+					/\s\d{2}\s/,
+					/\s\d$/,
+					/\s\d\s/,
+				]
+				if (regexs.some((regex) => int.match(regex))) return true
+
+				if (dec) {
+					regexs = [/\d{4}/, /^\s/, /^\d{2}\s/, /\s\d{2}\s/, /^\d\s/, /\s\d\s/]
+					if (regexs.some((regex) => dec.match(regex))) return true
+				}
+				return false
+			} else if (isExpressionWithChildren(this)) {
+				return this.children.some((child) => child.searchMisplacedSpaces())
+			} else {
+				return false
+			}
+		},
+
+		/* 
   params contient :
    - les valeurs de substitution
    - decimal : true si on veut la valeur décimale (approchée dans certains cas)
@@ -896,545 +910,320 @@ const pNode: Node = {
    - unit : l'unité dans laquelle on veut le résultat
    */
 
-	eval(params?: EvalArg) {
-		// par défaut on veut une évaluation exacte (entier, fraction, racine,...)
-		params = { ...evalDefaults, ...params }
-		// on substitue récursivement car un symbole peut en introduire un autre. Exemple : a = 2 pi
-		let e = this.substitute(params.values)
-		// if (this.ops && !e.ops) {
-		// 	console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-		// }
-		const unit =
-			typeof params.unit === 'string' && params.unit !== 'HMS'
-				? math('1 ' + params.unit).unit
-				: params.unit
+		eval(params?: EvalArg) {
+			// par défaut on veut une évaluation exacte (entier, fraction, racine,...)
+			params = { ...evalDefaults, ...params }
+			// on substitue récursivement car un symbole peut en introduire un autre. Exemple : a = 2 pi
+			let e = this.substitute(params.values)
+			// if (this.ops && !e.ops) {
+			// 	console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+			// }
+			const unit =
+				typeof params.unit === 'string' && params.unit !== 'HMS'
+					? math('1 ' + params.unit).unit
+					: params.unit
 
-		//  Cas particuliers : fonctions minip et maxip
-		// ces fonctions doivent retourner la forme initiale d'une des deux expressions
-		// et non la forme normale
-		if (this.isNumeric() && (isMaxP(this) || isMinP(this))) {
-			// TODO: et l'unité ?
-			if (isMinP(this)) {
-				e = this.first.isLowerThan(this.last) ? this.first : this.last
-			} else {
-				e = this.first.isGreaterThan(this.last) ? this.first : this.last
-			}
-		} else {
-			// on passe par la forme normale car elle nous donne la valeur exacte et gère les unités
-			let n = e.normal
-
-			// si l'unité du résultat est imposée
-			if (unit && n.unit) {
-				if (
-					(unit === 'HMS' && !n.isDuration()) ||
-					(unit !== 'HMS' &&
-						// pourquoi pas unit.normal directement ?
-						!math('1' + unit.string).normal.isSameQuantityType(n))
-				) {
-					throw new Error(
-						`Unités incompatibles ${n.string} ${
-							typeof unit === 'string' ? unit : unit.string
-						}`,
-					)
+			//  Cas particuliers : fonctions minip et maxip
+			// ces fonctions doivent retourner la forme initiale d'une des deux expressions
+			// et non la forme normale
+			if (this.isNumeric() && (isMaxP(this) || isMinP(this))) {
+				// TODO: et l'unité ?
+				if (isMinP(this)) {
+					e = this.first.isLowerThan(this.last) ? this.first : this.last
+				} else {
+					e = this.first.isGreaterThan(this.last) ? this.first : this.last
 				}
-				if (unit !== 'HMS') {
-					const coef = n.unit.getCoefTo(unit.normal)
-					n = n.mult(coef)
+			} else {
+				// on passe par la forme normale car elle nous donne la valeur exacte et gère les unités
+				let n = e.normal
+
+				// si l'unité du résultat est imposée
+				if (unit && n.unit) {
+					if (
+						(unit === 'HMS' && !n.isDuration()) ||
+						(unit !== 'HMS' &&
+							// pourquoi pas unit.normal directement ?
+							!math('1' + unit.string).normal.isSameQuantityType(n))
+					) {
+						throw new Error(
+							`Unités incompatibles ${n.string} ${
+								typeof unit === 'string' ? unit : unit.string
+							}`,
+						)
+					}
+					if (unit !== 'HMS') {
+						const coef = n.unit.getCoefTo(unit.normal())
+						n = n.mult(coef)
+					}
+				}
+
+				// on retourne à la forme naturelle
+				if (unit === 'HMS') {
+					e = n.toNode({ formatTime: true })
+				} else {
+					e = n.node
+				}
+
+				// on met à jour l'unité qui a pu être modifiée par une conversion
+				//  par défaut, c'est l'unité de base de la forme normale qui est utilisée.
+				if (unit && unit !== 'HMS') {
+					e.unit = unit
 				}
 			}
 
-			// on retourne à la forme naturelle
-			if (unit === 'HMS') {
-				e = n.toNode({ formatTime: true })
-			} else {
-				e = n.node
+			// si on veut la valeur décimale, on utilise la fonction evaluate
+			if (params.decimal && unit !== 'HMS') {
+				//  on garde en mémoire l'unité
+				const u = e.unit
+
+				// evaluate retourne un objet Decimal
+				e = number(
+					evaluate(e, params).toDecimalPlaces(params.precision).toString(),
+				)
+
+				//  on remet l'unité qui avait disparu
+				if (u) e.unit = u
+			}
+			return e
+		},
+
+		// génère des valeurs pour les templates
+		generate() {
+			// tableau contenant les valeurs générées pour  $1, $2, ....
+			this.root.generated = []
+			return generate(this)
+		},
+
+		shallow() {
+			return {
+				nature: this.type,
+				children: isExpressionWithChildren(this)
+					? this.children.map((e) => e.type)
+					: null,
+				unit: this.unit ? this.unit.string : '',
+			}
+		},
+
+		// substituee les symboles
+		// certains symboles (pi, ..) sont résevés à des constantes
+		substitute(values: Record<string, string> = {}) {
+			this.root.substitutionMap = { ...this.root.substitutionMap, ...values }
+			return substitute(this, values)
+		},
+
+		matchTemplate(t: Node) {
+			let n: number
+			let integerPart: number
+			let decimalPart: number
+
+			function checkChildren(
+				e: ExpressionWithChildren,
+				t: ExpressionWithChildren,
+			) {
+				for (let i = 0; i < t.length; i++) {
+					if (!e.children[i].matchTemplate(t.children[i])) return false
+				}
+				return true
 			}
 
-			// on met à jour l'unité qui a pu être modifiée par une conversion
-			//  par défaut, c'est l'unité de base de la forme normale qui est utilisée.
-			if (unit && unit !== 'HMS') {
-				e.unit = unit
+			function checkDigitsNumber(
+				n: number,
+				minDigits: number,
+				maxDigits: number,
+			) {
+				const ndigits = n === 0 ? 0 : Math.floor(Math.log10(n)) + 1
+				return ndigits <= maxDigits && ndigits >= minDigits
 			}
-		}
 
-		// si on veut la valeur décimale, on utilise la fonction evaluate
-		if (params.decimal && unit !== 'HMS') {
-			//  on garde en mémoire l'unité
-			const u = e.unit
+			function checkLimits(n: number, min: number, max: number) {
+				return n >= min && n <= max
+			}
 
-			// evaluate retourne un objet Decimal
-			e = number(
-				evaluate(e, params).toDecimalPlaces(params.precision).toString(),
-			)
+			if (isNumber(t)) {
+				return isNumber(this) && this.value.equals(t.value)
+			} else if (isHole(t)) {
+				return this.isHole()
+			} else if (isSymbol(t)) {
+				return isSymbol(this) && this.symbol === t.symbol
+			} else if (isTemplate(t)) {
+				switch (t.nature) {
+					case '$e':
+					case '$ep':
+					case '$ei':
+						if (
+							(t.signed && (isOpposite(this) || isPositive(this))) ||
+							(t.relative && isOpposite(this))
+						)
+							return this.first.matchTemplate(
+								template({ nature: t.nature, children: t.children }),
+							)
+						if (
+							!isHole(t.children[1]) &&
+							!checkDigitsNumber(
+								(this as Numbr).value.toNumber(),
+								!isHole(t.children[0])
+									? (t.children[0] as Numbr).value.toNumber()
+									: 0,
+								(t.children[1] as Numbr).value.toNumber(),
+							)
+						) {
+							return false
+						}
+						if (
+							!isHole(t.children[2]) &&
+							!checkLimits(
+								(this as Numbr).value.toNumber(),
+								(t.children[2] as Numbr).value.toNumber(),
+								(t.children[3] as Numbr).value.toNumber(),
+							)
+						) {
+							return false
+						}
+						if (t.nature === '$e') return this.isInt()
+						if (t.nature === '$ep') return this.isEven()
+						if (t.nature === '$ei') return this.isOdd()
+						break
 
-			//  on remet l'unité qui avait disparu
-			if (u) e.unit = u
-		}
-		return e
-	},
+					case '$d':
+						if (t.relative && isOpposite(this))
+							return this.first.matchTemplate(t)
+						if (!this.isNumber()) return false
 
-	// génère des valeurs pour les templates
-	generate() {
-		// tableau contenant les valeurs générées pour  $1, $2, ....
-		this.root.generated = []
-		return generate(this)
-	},
+						if (this.isInt()) {
+							// TODO: A quoi sert intgerPart si on retourne false ?
+							// integerPart = this.value.trunc()
+							return false
+						} else {
+							const [integerPartString, decimalPartString] = (
+								this as Numbr
+							).value
+								.toString()
+								.split('.')
+							integerPart = parseInt(integerPartString, 10)
+							decimalPart = parseInt(decimalPartString, 10)
 
-	shallow() {
-		return {
-			nature: this.type,
-			children: isExpressionWithChildren(this)
-				? this.children.map((e) => e.type)
-				: null,
-			unit: this.unit ? this.unit.string : '',
-		}
-	},
+							if (t.children[0].isTemplate()) {
+								if (
+									!number(
+										Math.floor(Math.log10(integerPart)) + 1,
+									).matchTemplate(t.children[0])
+								) {
+									return false
+								}
+							} else if (
+								!checkDigitsNumber(
+									integerPart,
+									(t.children[0] as Numbr).value.toNumber(),
+									(t.children[0] as Numbr).value.toNumber(),
+								)
+							) {
+								return false
+							}
 
-	// renvoie la forme normale dans le format interne
-	//  pour avoir la forme normale dans le même format que les autres expressions,
-	//  il faut utiliser l'attribut .node
-	get normal() {
-		if (!this._normal) this._normal = normalize(this)
-		return this._normal
-	},
+							if (t.children[1].isTemplate()) {
+								if (
+									!number(
+										Math.floor(Math.log10(decimalPart)) + 1,
+									).matchTemplate(t.children[1])
+								)
+									return false
+							} else if (
+								!checkDigitsNumber(
+									decimalPart,
+									(t.children[1] as Numbr).value.toNumber(),
+									(t.children[1] as Numbr).value.toNumber(),
+								)
+							) {
+								return false
+							}
 
-	// substituee les symboles
-	// certains symboles (pi, ..) sont résevés à des constantes
-	substitute(values: Record<string, string> = {}) {
-		this.root.substitutionMap = { ...this.root.substitutionMap, ...values }
-		return substitute(this, values)
-	},
+							return true
+						}
 
-	matchTemplate(t: Node) {
-		// let n: number
-		// let integerPart: number
-		// let decimalPart: number
+					case '$l':
+						return true
 
-		// function checkChildren(
-		// 	e: ExpressionWithChildren,
-		// 	t: ExpressionWithChildren,
-		// ) {
-		// 	for (let i = 0; i < t.length; i++) {
-		// 		if (!e.children[i].matchTemplate(t.children[i])) return false
-		// 	}
-		// 	return true
-		// }
+					default:
+						n = parseInt(t.nature.slice(1, t.nature.length), 10)
+						return this.matchTemplate(t.root.generated[n - 1])
+				}
+			} else if (isExpressionWithChildren(t)) {
+				return (
+					isExpressionWithChildren(this) &&
+					t.type === this.type &&
+					t.length === this.length &&
+					checkChildren(this, t)
+				)
+			}
+			return true
+		},
 
-		// function checkDigitsNumber(
-		// 	n: number,
-		// 	minDigits: number,
-		// 	maxDigits: number,
-		// ) {
-		// 	const ndigits = n === 0 ? 0 : Math.floor(Math.log10(n)) + 1
-		// 	return ndigits <= maxDigits && ndigits >= minDigits
-		// }
+		copyFromString(withUnit = true) {
+			return math(this.toString({ displayUnit: withUnit }))
+		},
 
-		// function checkLimits(n: number, min: number, max: number) {
-		// 	return n >= min && n <= max
-		// }
+		copy(children?: Node[]) {
+			const params: CopyArg = {}
+			if (this.unit) params.unit = this.unit
+			if (isExpressionWithChildren(this)) {
+				params.children = children || [...this.children]
+			}
+			if (isNumber(this)) {
+				params.value = this.value
+				params.input = this.input
+			}
+			if (isBoolean(this)) {
+				params.value = this.value
+				params.boolvalue = this.boolvalue
+			}
+			if (isSymbol(this)) {
+				params.symbol = this.symbol
+			}
+			if (isSegmentLength(this)) {
+				params.begin = this.begin
+				params.end = this.end
+			}
+			if (isIdentifier(this)) {
+				params.name = this.name
+			}
+			if (isIncorrectExp(this)) {
+				params.error = this.error
+				params.message = this.message
+			}
+			if (isLimit(this)) {
+				params.sign = this.sign
+			}
+			if (isRelations(this)) {
+				params.ops = this.ops
+			}
+			return createNode({ type: this.type, ...params })
+		},
 
-		// if (isNumber(t)) {
-		// 	return isNumber(this) && this.value.equals(t.value)
-		// } else if (isHole(t)) {
-		// 	return this.isHole()
-		// } else if (isSymbol(t)) {
-		// 	return isSymbol(this) && this.symbol === t.symbol
-		// } else if (isTemplate(t)) {
-		// 	switch (t.nature) {
-		// 		case '$e':
-		// 		case '$ep':
-		// 		case '$ei':
-		// 			if (
-		// 				(t.signed && (this.isOpposite() || this.isPositive())) ||
-		// 				(t.relative && this.isOpposite())
-		// 			)
-		// 				return this.first.matchTemplate(
-		// 					template({ nature: t.nature, children: t.children }),
-		// 				)
-		// 			if (
-		// 				!t.children[1].isHole() &&
-		// 				!checkDigitsNumber(
-		// 					this.value.toNumber(),
-		// 					!t.children[0].isHole() ? t.children[0].value.toNumber() : 0,
-		// 					t.children[1].value.toNumber(),
-		// 				)
-		// 			) {
-		// 				return false
-		// 			}
-		// 			if (
-		// 				!t.children[2].isHole() &&
-		// 				!checkLimits(
-		// 					this.value.toNumber(),
-		// 					t.children[2].value.toNumber(),
-		// 					t.children[3].value.toNumber(),
-		// 				)
-		// 			) {
-		// 				return false
-		// 			}
-		// 			if (t.nature === '$e') return this.isInt()
-		// 			if (t.nature === '$ep') return this.isEven()
-		// 			if (t.nature === '$ei') return this.isOdd()
-		// 			break
+		[Symbol.iterator](this: ExpressionWithChildren): IterableIterator<Node> {
+			return this.children[Symbol.iterator]()
+		},
+		get first() {
+			return (this as ExpressionWithChildren).children[0]
+		},
 
-		// 		case '$d':
-		// 			if (t.relative && this.isOpposite())
-		// 				return this.first.matchTemplate(t)
-		// 			if (!this.isNumber()) return false
-
-		// 			if (this.isInt()) {
-		// 				// TODO: A quoi sert intgerPart si on retourne false ?
-		// 				// integerPart = this.value.trunc()
-		// 				return false
-		// 			} else {
-		// 				const [integerPartString, decimalPartString] = this.value
-		// 					.toString()
-		// 					.split('.')
-		// 				integerPart = parseInt(integerPartString, 10)
-		// 				decimalPart = parseInt(decimalPartString, 10)
-
-		// 				if (t.children[0].isTemplate()) {
-		// 					if (
-		// 						!number(Math.floor(Math.log10(integerPart)) + 1).matchTemplate(
-		// 							t.children[0],
-		// 						)
-		// 					) {
-		// 						return false
-		// 					}
-		// 				} else if (
-		// 					!checkDigitsNumber(
-		// 						integerPart,
-		// 						t.children[0].value.toNumber(),
-		// 						t.children[0].value.toNumber(),
-		// 					)
-		// 				) {
-		// 					return false
-		// 				}
-
-		// 				if (t.children[1].isTemplate()) {
-		// 					if (
-		// 						!number(Math.floor(Math.log10(decimalPart)) + 1).matchTemplate(
-		// 							t.children[1],
-		// 						)
-		// 					)
-		// 						return false
-		// 				} else if (
-		// 					!checkDigitsNumber(
-		// 						decimalPart,
-		// 						t.children[1].value.toNumber(),
-		// 						t.children[1].value.toNumber(),
-		// 					)
-		// 				) {
-		// 					return false
-		// 				}
-
-		// 				return true
-		// 			}
-
-		// 		case '$l':
-		// 			return true
-
-		// 		default:
-		// 			n = parseInt(t.nature.slice(1, t.nature.length), 10)
-		// 			return this.matchTemplate(t.root.generated[n - 1])
-		// 	}
-		// } else if (isExpressionWithChildren(t)) {
-		// 	return (
-		// 		isExpressionWithChildren(this) &&
-		// 		t.type === this.type &&
-		// 		t.length === this.length &&
-		// 		checkChildren(this, t)
-		// 	)
-		// }
-		return false
-	},
-
-	copyFromString(withUnit = true) {
-		return math(this.toString({ displayUnit: withUnit }))
-	},
-
-	copy(params?: CopyArg) {
-		const node = createNode({
-			prototype: Object.getPrototypeOf(this),
-		})
-		if (isExpressionWithChildren(this)) {
-			;(node as ExpressionWithChildren).children = params?.children || [
-				...this.children,
+		get last() {
+			return (this as ExpressionWithChildren).children[
+				(this as ExpressionWithChildren).children.length - 1
 			]
-		}
-		if (isNumber(this)) {
-			;(node as Numbr).value = params?.value || this.value
-			;(node as Numbr).input = params?.input || this.input
-		}
-		if (isBoolean(this)) {
-			;(node as Bool).value = params?.value || this.value
-			;(node as Bool).boolvalue = params?.boolvalue || this.boolvalue
-		}
-		if (isSymbol(this)) {
-			;(node as Symbl).symbol = params?.symbol || this.symbol
-		}
-		if (isSegmentLength(this)) {
-			;(node as SegmentLength).begin = params?.begin || this.begin
-			;(node as SegmentLength).end = params?.end || this.end
-		}
-		if (isIdentifier(this)) {
-			;(node as Identifier).name = params?.name || this.name
-		}
-		if (isIncorrectExp(this)) {
-			;(node as IncorrectExp).error = params?.error || this.error
-			;(node as IncorrectExp).message = params?.message || this.message
-		}
-		if (isLimit(this)) {
-			;(node as Limit).sign = params?.sign || this.sign
-		}
-		if (isRelations(this)) {
-			;(node as Relations).ops = params?.ops || this.ops
-		}
-		return node
-	},
-}
+		},
 
-const pNodeWithChildren: ExpressionWithChildren = {
-	...pNode,
-	children: [],
-	[Symbol.iterator](this: ExpressionWithChildren): IterableIterator<Node> {
-		return this.children[Symbol.iterator]()
-	},
-	get first() {
-		return this.children[0]
-	},
+		get length() {
+			return (this as ExpressionWithChildren).children.length
+		},
 
-	get last() {
-		return (this as ExpressionWithChildren).children[
-			(this as ExpressionWithChildren).children.length - 1
-		]
-	},
+		isTrue() {
+			return isBoolean(this) && this.boolvalue
+		},
 
-	get length() {
-		return (this as ExpressionWithChildren).children.length
-	},
-}
-console.log('***')
-const pBool: Bool = {
-	...pNode,
-	type: TYPE_BOOLEAN,
-	value: new Decimal(0),
-	boolvalue: false,
-	isTrue() {
-		return isBoolean(this) && this.boolvalue
-	},
-
-	isFalse() {
-		return isBoolean(this) && !this.boolvalue
-	},
-}
-
-const pNumber: Numbr = {
-	...pNode,
-	input: '',
-	value: new Decimal(0),
-	type: TYPE_NUMBER,
-}
-
-const pHole: Hole = {
-	...pNode,
-	type: TYPE_HOLE,
-}
-
-const pTemplate: Template = {
-	...pNodeWithChildren,
-	type: TYPE_TEMPLATE,
-	nature: '',
-}
-
-const pSegmentLength: SegmentLength = {
-	...pNode,
-	type: TYPE_SEGMENT_LENGTH,
-	begin: '',
-	end: '',
-}
-
-const pIncorrectExp: IncorrectExp = {
-	...pNode,
-	type: TYPE_ERROR,
-	error: '',
-	message: '',
-}
-
-const pSymbol: Symbl = {
-	...pNode,
-	type: TYPE_SYMBOL,
-	symbol: '',
-}
-
-const pIdentifier: Identifier = {
-	...pNode,
-	type: TYPE_IDENTIFIER,
-	name: '',
-}
-
-const pSum: Sum = {
-	...pNodeWithChildren,
-	type: TYPE_SUM,
-}
-const pDifference: Difference = {
-	...pNodeWithChildren,
-	type: TYPE_DIFFERENCE,
-}
-
-const pProduct: Product = {
-	...pNodeWithChildren,
-	type: TYPE_PRODUCT,
-}
-const pProductImplicit: ProductImplicit = {
-	...pNodeWithChildren,
-	type: TYPE_PRODUCT_IMPLICIT,
-}
-const pProductPoint: ProductPoint = {
-	...pNodeWithChildren,
-	type: TYPE_PRODUCT_POINT,
-}
-const pDivision: Division = {
-	...pNodeWithChildren,
-	type: TYPE_DIVISION,
-}
-const pQuotient: Quotient = {
-	...pNodeWithChildren,
-	type: TYPE_QUOTIENT,
-}
-
-const pPower: Power = {
-	...pNodeWithChildren,
-	type: TYPE_POWER,
-}
-
-const pPositive: Positive = {
-	...pNodeWithChildren,
-	type: TYPE_POSITIVE,
-}
-
-const pOpposite: Opposite = {
-	...pNodeWithChildren,
-	type: TYPE_OPPOSITE,
-}
-
-const pBracket: Bracket = {
-	...pNodeWithChildren,
-	type: TYPE_BRACKET,
-}
-
-const pRadical: Radical = {
-	...pNodeWithChildren,
-	type: TYPE_RADICAL,
-}
-const pCos: Cos = {
-	...pNodeWithChildren,
-	type: TYPE_COS,
-}
-const pSin: Sin = {
-	...pNodeWithChildren,
-	type: TYPE_SIN,
-}
-const pTan: Tan = {
-	...pNodeWithChildren,
-	type: TYPE_TAN,
-}
-const pLn: LogN = {
-	...pNodeWithChildren,
-	type: TYPE_LN,
-}
-
-const pLog: Log = {
-	...pNodeWithChildren,
-	type: TYPE_LOG,
-}
-const pExp: Exp = {
-	...pNodeWithChildren,
-	type: TYPE_EXP,
-}
-
-const pMod: Mod = {
-	...pNodeWithChildren,
-	type: TYPE_MOD,
-}
-
-const pFloor: Floor = {
-	...pNodeWithChildren,
-	type: TYPE_FLOOR,
-}
-
-const pMin: Min = {
-	...pNodeWithChildren,
-	type: TYPE_MIN,
-}
-const pMinP: MinP = {
-	...pNodeWithChildren,
-	type: TYPE_MINP,
-}
-const pMax: Max = {
-	...pNodeWithChildren,
-	type: TYPE_MAX,
-}
-const pMaxP: MaxP = {
-	...pNodeWithChildren,
-	type: TYPE_MAXP,
-}
-const pAbs: Abs = {
-	...pNodeWithChildren,
-	type: TYPE_ABS,
-}
-
-const pPercentage: Percentage = {
-	...pNodeWithChildren,
-	type: TYPE_PERCENTAGE,
-}
-
-const pEquality: Equality = {
-	...pNodeWithChildren,
-	type: TYPE_EQUALITY,
-}
-const pUnequality: Unequality = {
-	...pNodeWithChildren,
-	type: TYPE_UNEQUALITY,
-}
-const pInequalityLess: InequalityLess = {
-	...pNodeWithChildren,
-	type: TYPE_INEQUALITY_LESS,
-}
-
-const pInequalityLessOrEqual: InequalityLessOrEqual = {
-	...pNodeWithChildren,
-	type: TYPE_INEQUALITY_LESSOREQUAL,
-}
-
-const pInequalityMore: InequalityMore = {
-	...pNodeWithChildren,
-	type: TYPE_INEQUALITY_MORE,
-}
-
-const pInequalityMoreOrEqual: InequalityMoreOrEqual = {
-	...pNodeWithChildren,
-	type: TYPE_INEQUALITY_MOREOREQUAL,
-}
-
-const pRelations: Relations = {
-	...pNodeWithChildren,
-	ops: [],
-	type: TYPE_RELATIONS,
-}
-const pLimit: Limit = {
-	...pNodeWithChildren,
-	sign: '',
-	type: TYPE_LIMIT,
-}
-
-const pPgcd: Gcd = {
-	...pNodeWithChildren,
-	type: TYPE_GCD,
-}
-
-const pTime: Time = {
-	...pNodeWithChildren,
-	type: TYPE_TIME,
+		isFalse() {
+			return isBoolean(this) && !this.boolvalue
+		},
+	}
 }
 
 /* 
@@ -1442,15 +1231,11 @@ Création de la représentation intermédiaire de l'expresssion mathématique (A
 La forme normale utilise une forme propre.
  */
 
-export function createNode({ children, prototype, ...params }: CreateNodeArg) {
-	console.log('createNode', prototype.type)
-	const node: Node | ExpressionWithChildren = Object.create({
-		prototype, //le prototype contient le type
-	})
+export function createNode({ type, children, ...params }: CreateNodeArg) {
+	const node: Node = createPNode()
 	if (children) {
 		children = children.map((child) => {
 			if (child.parent) {
-				// TODO: est-ce qu'il ne faut pas passer par le prototype ?
 				const newChild = child.copy()
 				newChild.parent = node as ExpressionWithChildren
 				return newChild
@@ -1459,8 +1244,9 @@ export function createNode({ children, prototype, ...params }: CreateNodeArg) {
 				return child
 			}
 		})
+		node.children = children
 	}
-
+	node.type = type
 	Object.assign(node, params)
 
 	// TODO: est-ce vraiment bien util ?
@@ -1480,103 +1266,103 @@ export function createNode({ children, prototype, ...params }: CreateNodeArg) {
 }
 
 export function sum(children: Node[]) {
-	return createNode({ prototype: pSum, children }) as Sum
+	return createNode({ type: TYPE_SUM, children }) as Sum
 }
 export function difference(children: Node[]) {
-	return createNode({ prototype: pDifference, children }) as Difference
+	return createNode({ type: TYPE_DIFFERENCE, children }) as Difference
 }
 export function division(children: Node[]) {
-	return createNode({ prototype: pDivision, children }) as Division
+	return createNode({ type: TYPE_DIVISION, children }) as Division
 }
 export function product(children: Node[]) {
-	return createNode({ prototype: pProduct, children }) as Product
+	return createNode({ type: TYPE_PRODUCT, children }) as Product
 }
 export function productImplicit(children: Node[]) {
 	return createNode({
-		prototype: pProductImplicit,
+		type: TYPE_PRODUCT_IMPLICIT,
 		children,
 	}) as ProductImplicit
 }
 export function productPoint(children: Node[]) {
-	return createNode({ prototype: pProductPoint, children }) as ProductPoint
+	return createNode({ type: TYPE_PRODUCT_POINT, children }) as ProductPoint
 }
 export function quotient(children: Node[]) {
-	return createNode({ prototype: pQuotient, children }) as Quotient
+	return createNode({ type: TYPE_QUOTIENT, children }) as Quotient
 }
 export function power(children: Node[]) {
-	return createNode({ prototype: pPower, children }) as Power
+	return createNode({ type: TYPE_POWER, children }) as Power
 }
 export function opposite(children: Node[]) {
-	return createNode({ prototype: pOpposite, children }) as Opposite
+	return createNode({ type: TYPE_OPPOSITE, children }) as Opposite
 }
 export function positive(children: Node[]) {
-	return createNode({ prototype: pPositive, children }) as Positive
+	return createNode({ type: TYPE_POSITIVE, children }) as Positive
 }
 export function bracket(children: Node[]) {
-	return createNode({ prototype: pBracket, children }) as Bracket
+	return createNode({ type: TYPE_BRACKET, children }) as Bracket
 }
 export function radical(children: Node[]) {
-	return createNode({ prototype: pRadical, children }) as Radical
+	return createNode({ type: TYPE_RADICAL, children }) as Radical
 }
 
 export function cos(children: Node[]) {
-	return createNode({ prototype: pCos, children }) as Cos
+	return createNode({ type: TYPE_COS, children }) as Cos
 }
 
 export function sin(children: Node[]) {
-	return createNode({ prototype: pSin, children }) as Sin
+	return createNode({ type: TYPE_SIN, children }) as Sin
 }
 
 export function tan(children: Node[]) {
-	return createNode({ prototype: pTan, children }) as Tan
+	return createNode({ type: TYPE_TAN, children }) as Tan
 }
 
 export function ln(children: Node[]) {
-	return createNode({ prototype: pLn, children }) as LogN
+	return createNode({ type: TYPE_LN, children }) as LogN
 }
 
 export function log(children: Node[]) {
-	return createNode({ prototype: pLog, children }) as Log
+	return createNode({ type: TYPE_LOG, children }) as Log
 }
 
 export function exp(children: Node[]) {
-	return createNode({ prototype: pExp, children }) as Exp
+	return createNode({ type: TYPE_EXP, children }) as Exp
 }
 
 export function pgcd(children: Node[]) {
-	return createNode({ prototype: pPgcd, children }) as Gcd
+	return createNode({ type: TYPE_GCD, children }) as Gcd
 }
 
 export function mod(children: Node[]) {
-	return createNode({ prototype: pMod, children }) as Mod
+	return createNode({ type: TYPE_MOD, children }) as Mod
 }
 
 export function floor(children: Node[]) {
-	return createNode({ prototype: pFloor, children }) as Floor
+	return createNode({ type: TYPE_FLOOR, children }) as Floor
 }
 
 export function abs(children: Node[]) {
-	return createNode({ prototype: pAbs, children }) as Abs
+	return createNode({ type: TYPE_ABS, children }) as Abs
 }
 
 export function min(children: Node[]) {
-	return createNode({ prototype: pMin, children }) as Min
+	return createNode({ type: TYPE_MIN, children }) as Min
 }
 
 export function minPreserve(children: Node[]) {
-	return createNode({ prototype: pMinP, children }) as MinP
+	return createNode({ type: TYPE_MINP, children }) as MinP
 }
 
 export function max(children: Node[]) {
-	return createNode({ prototype: pMax, children }) as Max
+	return createNode({ type: TYPE_MAX, children }) as Max
 }
 
 export function maxPreserve(children: Node[]) {
-	return createNode({ prototype: pMaxP, children }) as MaxP
+	return createNode({ type: TYPE_MAXP, children }) as MaxP
 }
 
 export function percentage(children: Node[]) {
-	return createNode({ prototype: pPercentage, children }) as Percentage
+	return createNode({ type: TYPE_PERCENTAGE, children }) as Percentage
 }
 export function number(input: number | Decimal | string) {
 	//  on remplace la virgule par un point car decimaljs ne gère pas la virgule
@@ -1587,7 +1373,7 @@ export function number(input: number | Decimal | string) {
 	)
 
 	return createNode({
-		prototype: pNumber,
+		type: TYPE_NUMBER,
 		value,
 		input: input.toString().trim().replace(',', '.'),
 	}) as Numbr
@@ -1595,42 +1381,42 @@ export function number(input: number | Decimal | string) {
 
 export function boolean(value: boolean) {
 	return createNode({
-		prototype: pBool,
+		type: TYPE_BOOLEAN,
 		boolvalue: value,
 		value: value ? new Decimal(1) : new Decimal(0),
 	}) as Bool
 }
 export function symbol(symbl: string) {
-	return createNode({ prototype: pSymbol, symbol: symbl }) as Symbl
+	return createNode({ type: TYPE_SYMBOL, symbol: symbl }) as Symbl
 }
 export function segmentLength(begin: string, end: string) {
-	return createNode({ prototype: pSegmentLength, begin, end }) as SegmentLength
+	return createNode({ type: TYPE_SEGMENT_LENGTH, begin, end }) as SegmentLength
 }
 export function notdefined(error: string, message = '', input = '') {
 	return createNode({
-		prototype: pIncorrectExp,
+		type: TYPE_ERROR,
 		error,
 		message,
 		input,
 	}) as IncorrectExp
 }
 export function hole() {
-	return createNode({ prototype: pHole }) as Hole
+	return createNode({ type: TYPE_HOLE }) as Hole
 }
 
 export function template(params: TemplateArg) {
-	return createNode({ prototype: pTemplate, ...params }) as Template
+	return createNode({ type: TYPE_TEMPLATE, ...params }) as Template
 }
 
 export function relations(ops: string[], children: Node[]) {
-	return createNode({ prototype: pRelations, ops, children }) as Relations
+	return createNode({ type: TYPE_RELATIONS, ops, children }) as Relations
 }
 export function equality(children: Node[]) {
-	return createNode({ prototype: pEquality, children }) as Equality
+	return createNode({ type: TYPE_EQUALITY, children }) as Equality
 }
 
 export function unequality(children: Node[]) {
-	return createNode({ prototype: pUnequality, children }) as Unequality
+	return createNode({ type: TYPE_UNEQUALITY, children }) as Unequality
 }
 
 export function inequality(
@@ -1639,37 +1425,37 @@ export function inequality(
 ) {
 	if (relation === '<') {
 		return createNode({
-			prototype: pInequalityLess,
+			type: TYPE_INEQUALITY_LESS,
 			children,
 		}) as InequalityLess
 	} else if (relation === '>') {
 		return createNode({
-			prototype: pInequalityMore,
+			type: TYPE_INEQUALITY_MORE,
 			children,
 		}) as InequalityMore
 	} else if (relation === '<=') {
 		return createNode({
-			prototype: pInequalityLessOrEqual,
+			type: TYPE_INEQUALITY_LESSOREQUAL,
 			children,
 		}) as InequalityLessOrEqual
 	} else {
 		return createNode({
-			prototype: pInequalityMoreOrEqual,
+			type: TYPE_INEQUALITY_MOREOREQUAL,
 			children,
 		}) as InequalityMoreOrEqual
 	}
 }
 
 export function time(children: Node[]) {
-	return createNode({ prototype: pTime, children }) as Time
+	return createNode({ type: TYPE_TIME, children }) as Time
 }
 
 export function identifier(name: string) {
-	return createNode({ prototype: pIdentifier, name }) as Identifier
+	return createNode({ type: TYPE_IDENTIFIER, name }) as Identifier
 }
 
 export function limit(sign: string, children: Node[]) {
-	return createNode({ prototype: pLimit, sign, children }) as Limit
+	return createNode({ type: TYPE_LIMIT, sign, children }) as Limit
 }
 
 function convertToExp(exp: Node | string | number | Decimal) {
@@ -1690,16 +1476,16 @@ const PUnit: Unit = {
 	mult(u: Unit) {
 		return unit(
 			this.u.mult(u.u, TYPE_PRODUCT_POINT),
-			this.normal.mult(u.normal),
+			this.normal().mult(u.normal()),
 		)
 	},
 
 	div(u: Unit) {
-		return unit(this.u.div(u.u), this.normal.div(u.normal))
+		return unit(this.u.div(u.u), this.normal().div(u.normal()))
 	},
 	pow(n: Node) {
 		//  n doit être un entier relatif
-		return unit(this.u.pow(n), this.normal.pow(n.normal))
+		return unit(this.u.pow(n), this.normal().pow(n.normal))
 	},
 
 	toString(): string {
@@ -1723,19 +1509,19 @@ const PUnit: Unit = {
 	},
 
 	isConvertibleTo(expectedUnit: Unit): boolean {
-		return this.normal.isConvertibleTo(expectedUnit.normal)
+		return this.normal().isConvertibleTo(expectedUnit.normal())
 		// on compare les bases de la forme normale
 	},
 
 	getCoefTo(u: Unit): Node {
-		return this.normal.getCoefTo(u.normal).node
+		return this.normal().getCoefTo(u.normal()).node
 	},
 
 	equalsTo(u: Unit): boolean {
-		return this.normal.equalsTo(u.normal)
+		return this.normal().equalsTo(u.normal())
 	},
 	type: TYPE_UNIT,
-	get normal() {
+	normal() {
 		return this._normal as Normal
 	},
 	get u() {
@@ -1747,7 +1533,6 @@ const PUnit: Unit = {
 ne doit être appelée à l'extérieur que pour créer une unité simple. Les unités composées sont créées par multiplication, division ou exponentiation.
 */
 function unit(u: string | Node, normal?: Normal) {
-	console.log('unit')
 	// if (!normal) {
 	if (typeof u === 'string') {
 		// c'est une unité simple créé avec une string
@@ -1758,8 +1543,8 @@ function unit(u: string | Node, normal?: Normal) {
 
 	const e: Unit = Object.create(PUnit)
 	Object.assign(e, {
-		u: typeof u === 'string' ? symbol(u) : u,
-		normal,
+		_u: typeof u === 'string' ? symbol(u) : u,
+		_normal: normal,
 	})
 	return e
 }
@@ -2103,7 +1888,7 @@ const pNlist: Nlist = {
 	},
 }
 
-// const emptyList = Object.create(pNlist)
+const emptyList = Object.create(pNlist)
 
 const pNormal: Normal = {
 	type: TYPE_NORMAL,
@@ -2154,13 +1939,13 @@ const pNormal: Normal = {
 	},
 
 	isDuration() {
-		return !!this.unit && this.unit.isConvertibleTo(unit('s').normal)
+		return !!this.unit && this.unit.isConvertibleTo(unit('s').normal())
 	},
 	isLength() {
-		return !!this.unit && this.unit.isConvertibleTo(unit('m').normal)
+		return !!this.unit && this.unit.isConvertibleTo(unit('m').normal())
 	},
 	isMass() {
-		return !!this.unit && this.unit.isConvertibleTo(unit('g').normal)
+		return !!this.unit && this.unit.isConvertibleTo(unit('g').normal())
 	},
 
 	// test if two units are the same type
@@ -2309,7 +2094,8 @@ const pNormal: Normal = {
 		).reduce()
 	},
 
-	mult(e: Normal) {
+	mult(exp: Normal | string | number | Decimal) {
+		const e = convertToNormal(exp)
 		let unit: Normal | undefined
 		if (this.unit && e.unit) unit = this.unit.mult(e.unit)
 		else if (this.unit) unit = this.unit
@@ -2563,7 +2349,7 @@ function nSumZero() {
 }
 
 // forme normale du nombre 1 - singleton
-function normOne(unit: Normal | undefined) {
+function normOne(unit?: Normal) {
 	return normal(nSumOne(), nSumOne(), unit)
 }
 
@@ -2592,11 +2378,10 @@ function createBase(b: Node, e?: Node) {
 	return nProduct([[e || number(1), b]])
 }
 
-export default function normalize(node: Node) {
-	console.log('nomalize node', node)
-	let d: Nlist = null // dénominateur de la partie normale
-	let n: Nlist = null // numérateur de la partie normale
-	let e: Normal = null // forme normale retournée
+export default function normalize(node: Node): Normal {
+	let d: Nlist = emptyList // dénominateur de la partie normale
+	let n: Nlist = emptyList // numérateur de la partie normale
+	let e: Normal | null = null // forme normale retournée
 
 	// pose des problèmes de prototypes
 	// const { unit, ...others } = node // ? est-ce qu'on se débarrasse de la forme normale?
@@ -2658,10 +2443,7 @@ export default function normalize(node: Node) {
 		) {
 			e = math('-sqrt(3)/2').normal
 		} else {
-			const base = createNode({
-				prototype: Object.getPrototypeOf(node),
-				children: [child],
-			})
+			const base = node.copy([child])
 			d = nSumOne()
 			if (child.isNumeric()) {
 				const coef = nSum([[number(1), createBase(base)]])
@@ -2707,10 +2489,7 @@ export default function normalize(node: Node) {
 		) {
 			e = math('-sqrt(3)/2').normal
 		} else {
-			const base = createNode({
-				prototype: Object.getPrototypeOf(node),
-				children: [child],
-			})
+			const base = node.copy([child])
 			d = nSumOne()
 			if (child.isNumeric()) {
 				const coef = nSum([[number(1), createBase(base)]])
@@ -2738,10 +2517,7 @@ export default function normalize(node: Node) {
 		} else if (childNormal.equalsTo('-pi/3')) {
 			e = math('-sqrt(3)').normal
 		} else {
-			const base = createNode({
-				prototype: Object.getPrototypeOf(node),
-				children: [child],
-			})
+			const base = node.copy([child])
 			d = nSumOne()
 			if (child.isNumeric()) {
 				const coef = nSum([[number(1), createBase(base)]])
@@ -2766,26 +2542,21 @@ export default function normalize(node: Node) {
 			const N = child.value.toNumber()
 			const factors = primeFactors(N)
 			if (factors.length === 1 && factors[0][1] === 1) {
-				const base = createNode({
-					prototype: Object.getPrototypeOf(node),
-					children: [child],
-				})
+				const base = node.copy([child])
 				const coef = nSum([[number(1), createBase(base)]])
 				n = nSum([[coef, baseOne()]])
 				d = nSumOne()
 			} else {
 				e = math(0).normal
+				e = e.add(number(0).normal)
 				factors.forEach((factor) => {
 					const [a, k] = factor
 					const term = math(`${k}*ln(${a})`).normal
-					e = e.add(term)
+					e = (e as Normal).add(term)
 				})
 			}
 		} else {
-			const base = createNode({
-				prototype: Object.getPrototypeOf(node),
-				children: [child],
-			})
+			const base = node.copy([child])
 			d = nSumOne()
 			if (child.isNumeric()) {
 				const coef = nSum([[number(1), createBase(base)]])
@@ -2795,7 +2566,7 @@ export default function normalize(node: Node) {
 			}
 		}
 	} else if (isExp(node)) {
-		const child = node.children[0]
+		const child = node.first
 		const childNormal = child.normal
 
 		if (isProduct(child) && (isLn(child.first) || isLn(child.last))) {
@@ -2809,10 +2580,7 @@ export default function normalize(node: Node) {
 		} else if (childNormal.equalsTo(0)) {
 			e = math(1).normal
 		} else {
-			const base = createNode({
-				prototype: Object.getPrototypeOf(node),
-				children: [child],
-			})
+			const base = node.copy([childNormal.node])
 			d = nSumOne()
 			if (child.isNumeric()) {
 				const coef = nSum([[number(1), createBase(base)]])
@@ -2822,19 +2590,16 @@ export default function normalize(node: Node) {
 			}
 		}
 	} else if (isAbs(node)) {
-		const childNormal = node.children[0].normal
-		const child = childNormal.node
+		const child = node.first
+		const childNormal = child.normal
 		if (child.isNumeric()) {
 			if (child.isLowerThan(0)) {
-				e = child.mult(-1).normal
+				e = childNormal.mult(-1)
 			} else {
 				e = childNormal
 			}
 		} else {
-			const base = createNode({
-				prototype: Object.getPrototypeOf(node),
-				children: [child],
-			})
+			const base = node.copy([child])
 			d = nSumOne()
 			n = nSum([[coefOne(), createBase(base)]])
 		}
@@ -2852,10 +2617,7 @@ export default function normalize(node: Node) {
 			const N = child.value.toNumber()
 			const factors = primeFactors(N)
 			if (factors.length === 1 && factors[0][1] === 1) {
-				const base = createNode({
-					prototype: Object.getPrototypeOf(node),
-					children: [child],
-				})
+				const base = node.copy([child])
 				const coef = nSum([[number(1), createBase(base)]])
 				n = nSum([[coef, baseOne()]])
 				d = nSumOne()
@@ -2864,14 +2626,11 @@ export default function normalize(node: Node) {
 				factors.forEach((factor) => {
 					const [a, k] = factor
 					const term = math(`${k}*log(${a})`).normal
-					e = e.add(term)
+					e = (e as Normal).add(term)
 				})
 			}
 		} else {
-			const base = createNode({
-				prototype: Object.getPrototypeOf(node),
-				children: [child],
-			})
+			const base = node.copy([child])
 			d = nSumOne()
 			if (child.isNumeric()) {
 				const coef = nSum([[number(1), createBase(base)]])
@@ -2886,10 +2645,7 @@ export default function normalize(node: Node) {
 		if (child.isNumeric()) {
 			e = number((child.eval({ decimal: true }) as Numbr).value.floor()).normal
 		} else {
-			const base = createNode({
-				prototype: Object.getPrototypeOf(node),
-				children: [child],
-			})
+			const base = node.copy([child])
 			d = nSumOne()
 			n = nSum([[coefOne(), createBase(base)]])
 		}
@@ -2907,19 +2663,13 @@ export default function normalize(node: Node) {
 			if (isInt(a) && isInt(b)) {
 				e = number(gcd(a.value.toNumber(), b.value.toNumber())).normal
 			} else {
-				const base = createNode({
-					prototype: Object.getPrototypeOf(node),
-					children,
-				})
+				const base = node.copy(children)
 				const coef = nSum([[number(1), createBase(base)]])
 				n = nSum([[coef, baseOne()]])
 				d = nSumOne()
 			}
 		} else {
-			const base = createNode({
-				prototype: Object.getPrototypeOf(node),
-				children,
-			})
+			const base = node.copy(children)
 			n = nSum([[coefOne(), createBase(base)]])
 			d = nSumOne()
 		}
@@ -2934,19 +2684,13 @@ export default function normalize(node: Node) {
 			) {
 				e = number(new Decimal(a.string).mod(new Decimal(b.string))).normal
 			} else {
-				const base = createNode({
-					prototype: Object.getPrototypeOf(node),
-					children,
-				})
+				const base = node.copy(children)
 				const coef = nSum([[number(1), createBase(base)]])
 				n = nSum([[coef, baseOne()]])
 				d = nSumOne()
 			}
 		} else {
-			const base = createNode({
-				prototype: Object.getPrototypeOf(node),
-				children,
-			})
+			const base = node.copy(children)
 			n = nSum([[coefOne(), createBase(base)]])
 			d = nSumOne()
 		}
@@ -2957,10 +2701,7 @@ export default function normalize(node: Node) {
 		if (node.isNumeric()) {
 			e = a.isLowerThan(b) ? a.normal : b.normal
 		} else {
-			const base = createNode({
-				prototype: Object.getPrototypeOf(node),
-				children,
-			})
+			const base = node.copy(children)
 			n = nSum([[coefOne(), createBase(base)]])
 			d = nSumOne()
 		}
@@ -2972,10 +2713,7 @@ export default function normalize(node: Node) {
 		if (node.isNumeric()) {
 			e = a.isGreaterThan(b) ? a.normal : b.normal
 		} else {
-			const base = createNode({
-				prototype: Object.getPrototypeOf(node),
-				children,
-			})
+			const base = node.copy(children)
 			n = nSum([[coefOne(), createBase(base)]])
 			d = nSumOne()
 		}
@@ -2998,8 +2736,8 @@ export default function normalize(node: Node) {
 		e = node.first.normal
 		if (!e.node.isZero()) e = e.oppose() // pour ne pas avoir un -0
 	} else if (isSum(node)) {
-		e = number(0).normal
-		for (let i = 0; i < node.children.length; i++) {
+		e = node.children[0].normal
+		for (let i = 1; i < node.children.length; i++) {
 			e = e.add(node.children[i].normal)
 		}
 	} else if (
@@ -3043,7 +2781,7 @@ export default function normalize(node: Node) {
 	}
 
 	// si e n'a pas été initialisé correctement
-	if (isHole(e.node)) {
+	if (!e) {
 		e = normal(n, d)
 	}
 	if (node.unit) {
@@ -3051,7 +2789,7 @@ export default function normalize(node: Node) {
 		// console.log('node', node)
 		// console.log('node.unit', node.unit)
 
-		let u = node.unit.normal
+		let u = node.unit.normal()
 		//  on récupère le coefficeient de l'unité et on l'applique à la forme normale
 		const coefN = nSum([[u.n.first[0], baseOne()]])
 		const coefD = nSum([[u.d.first[0], baseOne()]])
@@ -3083,4 +2821,9 @@ function convertToNormal(exp: Normal | string | number | Decimal) {
 	return e
 }
 
-console.log('end module node')
+function shallowClone(obj: object) {
+	return Object.create(
+		Object.getPrototypeOf(obj),
+		Object.getOwnPropertyDescriptors(obj),
+	)
+}

@@ -1,6 +1,5 @@
 import parser from '../src/math/parser'
 import { Bool } from '../src/math/types'
-
 describe('Parser interface', () => {
 	const p = parser()
 
@@ -628,6 +627,9 @@ describe('Parsing', () => {
 		for (const [tested, expected] of Object.entries(exps)) {
 			// console.log('tested', tested)
 			const e = p.parse(tested)
+			if (e.isIncorrect()) console.log(e.message)
+			expect(e.isCorrect()).toBeTruthy()
+
 			expect(e.shallow()).toEqual(expected)
 		}
 	})
@@ -870,6 +872,7 @@ describe('Testing parsing units', () => {
 		'1 °': '1 °',
 		'1 cm + 1 cm': '1 cm+1 cm',
 		'1 cm + 1 cm + 1 cm': '1 cm+1 cm+1 cm',
+		'(1 cm + 1 cm) + (1 cm + 1cm)': '(1 cm+1 cm)+(1 cm+1 cm)',
 		'3 cm + 5 cm ': '3 cm+5 cm',
 		'1 km + 1 cm ': '1 km+1 cm',
 		'1 km - 1 cm ': '1 km-1 cm',
@@ -913,6 +916,9 @@ describe('Testing parsing units', () => {
 	for (const [tested, expected] of Object.entries(exps)) {
 		test(`parsing ${tested}`, () => {
 			const e = p.parse(tested)
+			if (e.isIncorrect()) {
+				console.log('e', e.message)
+			}
 			expect(e.isCorrect()).toBe(true)
 			expect(p.parse(tested).string).toBe(expected)
 		})
