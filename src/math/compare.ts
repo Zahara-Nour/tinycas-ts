@@ -1,3 +1,4 @@
+console.log('module compare')
 import {
 	TYPE_BOOLEAN,
 	TYPE_BRACKET,
@@ -258,3 +259,4 @@ export default function compare(node1: CompareArg, node2: CompareArg) {
 		throw new Error(`incompatible types to compare ${node1} ${node2}`)
 	}
 }
+console.log('end module compare')

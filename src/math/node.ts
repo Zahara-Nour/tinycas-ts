@@ -1,3 +1,4 @@
+console.log('module node')
 import evaluate from './evaluate'
 import fraction from './fraction'
 import { text, latex, texmacs } from './output'
@@ -224,6 +225,7 @@ const evalDefaults: EvalArg = {
 	precision: 20,
 	decimal: false,
 }
+
 const pNode: Node = {
 	type: TYPE_NOT_INITALIZED,
 	generated: [],
@@ -1190,6 +1192,7 @@ const pNode: Node = {
 		return node
 	},
 }
+
 const pNodeWithChildren: ExpressionWithChildren = {
 	...pNode,
 	children: [],
@@ -1210,7 +1213,7 @@ const pNodeWithChildren: ExpressionWithChildren = {
 		return (this as ExpressionWithChildren).children.length
 	},
 }
-
+console.log('***')
 const pBool: Bool = {
 	...pNode,
 	type: TYPE_BOOLEAN,
@@ -1440,6 +1443,7 @@ La forme normale utilise une forme propre.
  */
 
 export function createNode({ children, prototype, ...params }: CreateNodeArg) {
+	console.log('createNode', prototype.type)
 	const node: Node | ExpressionWithChildren = Object.create({
 		prototype, //le prototype contient le type
 	})
@@ -1743,6 +1747,7 @@ const PUnit: Unit = {
 ne doit être appelée à l'extérieur que pour créer une unité simple. Les unités composées sont créées par multiplication, division ou exponentiation.
 */
 function unit(u: string | Node, normal?: Normal) {
+	console.log('unit')
 	// if (!normal) {
 	if (typeof u === 'string') {
 		// c'est une unité simple créé avec une string
@@ -2098,7 +2103,7 @@ const pNlist: Nlist = {
 	},
 }
 
-const emptyList = Object.create(pNlist)
+// const emptyList = Object.create(pNlist)
 
 const pNormal: Normal = {
 	type: TYPE_NORMAL,
@@ -2588,10 +2593,10 @@ function createBase(b: Node, e?: Node) {
 }
 
 export default function normalize(node: Node) {
-	console.log('node', node)
-	let d: Nlist = emptyList // dénominateur de la partie normale
-	let n: Nlist = emptyList // numérateur de la partie normale
-	let e: Normal = hole().normal // forme normale retournée
+	console.log('nomalize node', node)
+	let d: Nlist = null // dénominateur de la partie normale
+	let n: Nlist = null // numérateur de la partie normale
+	let e: Normal = null // forme normale retournée
 
 	// pose des problèmes de prototypes
 	// const { unit, ...others } = node // ? est-ce qu'on se débarrasse de la forme normale?
@@ -3077,3 +3082,5 @@ function convertToNormal(exp: Normal | string | number | Decimal) {
 	}
 	return e
 }
+
+console.log('end module node')

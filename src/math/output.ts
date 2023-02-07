@@ -1,3 +1,4 @@
+console.log('module output')
 import {
 	Node,
 	isLimit,
@@ -207,7 +208,6 @@ export function text(e: Node, options: ToStringArg) {
 		//   .join(options.isUnit ? '.' : options.implicit ? '' : e.type)
 		// console.log('isunit PRODUCT', options.isUnit, s)
 	} else if (isProductImplicit(e)) {
-		console.log('e', e)
 		s = e.children
 			.map((child) =>
 				child.isQuotient()
@@ -681,3 +681,4 @@ function formatSpaces(num: string) {
 	// if (dec) dec = dec.replace(/(\d)(?<=(?<!\d)(\d{3})+)/g, '$1\\,')
 	return dec ? int + '.' + dec : int
 }
+console.log('end module output')

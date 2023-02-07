@@ -1,3 +1,4 @@
+console.log('module types')
 import Decimal from 'decimal.js'
 
 export type NonEmptyArr<T> = [T, ...T[]]
@@ -952,3 +953,5 @@ export const TYPE_NSUM = 'nsum'
 export const TYPE_NPRODUCT = 'nproduct'
 export const TYPE_NULL_EXPRESSION = 'null expression'
 export const TYPE_NOT_INITALIZED = 'not initialized'
+
+console.log('end module types')

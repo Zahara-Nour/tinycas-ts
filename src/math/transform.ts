@@ -1,3 +1,4 @@
+console.log('module transform')
 import {
 	Node,
 	isFunction,
@@ -995,3 +996,4 @@ export function generate(node: Node) {
 	}
 	return e
 }
+console.log('end module transform')

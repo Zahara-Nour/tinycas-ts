@@ -1,3 +1,4 @@
+console.log('module evaluate')
 import {
 	EvalArg,
 	Node,
@@ -99,3 +100,4 @@ export default function evaluate(node: Node, params: EvalArg): Decimal {
 		)
 	}
 }
+console.log('end module evaluate')
