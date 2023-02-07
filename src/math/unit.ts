@@ -1,29 +1,27 @@
-import { symbol, number, hole } from './node'
+import { number, symbol } from './node'
 import {
 	conversionTable,
 	Node,
 	Normal,
-	Unit,
 	TYPE_PRODUCT_POINT,
 	TYPE_UNIT,
+	Unit,
 } from './types'
-
-// une unité simple ou composée
 
 const PUnit: Unit = {
 	mult(u: Unit) {
 		return unit(
 			this.u.mult(u.u, TYPE_PRODUCT_POINT),
-			this.normal.mult(u.normal),
+			this.normal().mult(u.normal()),
 		)
 	},
 
 	div(u: Unit) {
-		return unit(this.u.div(u.u), this.normal.div(u.normal))
+		return unit(this.u.div(u.u), this.normal().div(u.normal()))
 	},
 	pow(n: Node) {
 		//  n doit être un entier relatif
-		return unit(this.u.pow(n), this.normal.pow(n.normal))
+		return unit(this.u.pow(n), this.normal().pow(n.normal))
 	},
 
 	toString(): string {
@@ -47,20 +45,24 @@ const PUnit: Unit = {
 	},
 
 	isConvertibleTo(expectedUnit: Unit): boolean {
-		return this.normal.isConvertibleTo(expectedUnit.normal)
+		return this.normal().isConvertibleTo(expectedUnit.normal())
 		// on compare les bases de la forme normale
 	},
 
 	getCoefTo(u: Unit): Node {
-		return this.normal.getCoefTo(u.normal).node
+		return this.normal().getCoefTo(u.normal()).node
 	},
 
 	equalsTo(u: Unit): boolean {
-		return this.normal.equalsTo(u.normal)
+		return this.normal().equalsTo(u.normal())
 	},
 	type: TYPE_UNIT,
-	normal: hole().normal,
-	u: hole(),
+	normal() {
+		return this._normal as Normal
+	},
+	get u() {
+		return this._u as Node
+	},
 }
 
 /* 
@@ -77,8 +79,8 @@ function unit(u: string | Node, normal?: Normal) {
 
 	const e: Unit = Object.create(PUnit)
 	Object.assign(e, {
-		u: typeof u === 'string' ? symbol(u) : u,
-		normal,
+		_u: typeof u === 'string' ? symbol(u) : u,
+		_normal: normal,
 	})
 	return e
 }

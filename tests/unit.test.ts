@@ -1,5 +1,5 @@
 import { math } from '../src/math/math'
-import { unit } from '../src/math/node'
+import { unit } from '../src/math/unit'
 
 describe('Stringing  unit', () => {
 	const t = [

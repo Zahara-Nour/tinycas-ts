@@ -44,7 +44,7 @@ import {
 } from './node'
 import { Lexer, Node, Token, Unit, ParserOptions, TemplateArg } from './types'
 import Decimal from 'decimal.js'
-import { unit } from './node'
+import { unit } from './unit'
 // import template from './template'
 
 // const SEMICOLON = token(';')
