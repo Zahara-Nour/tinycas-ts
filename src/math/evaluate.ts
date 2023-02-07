@@ -1,26 +1,27 @@
 import {
-	TYPE_POSITIVE,
-	TYPE_BRACKET,
-	TYPE_DIFFERENCE,
-	TYPE_DIVISION,
-	TYPE_HOLE,
-	TYPE_NUMBER,
-	TYPE_OPPOSITE,
-	TYPE_POWER,
-	TYPE_PRODUCT,
-	TYPE_PRODUCT_IMPLICIT,
-	TYPE_PRODUCT_POINT,
-	TYPE_QUOTIENT,
-	TYPE_RADICAL,
-	TYPE_SUM,
-	TYPE_SYMBOL,
-	TYPE_COS,
-	TYPE_SIN,
-	TYPE_TAN,
-	TYPE_LN,
-	TYPE_EXP,
 	EvalArg,
-	Expression,
+	Node,
+	isNumber,
+	isSymbol,
+	isHole,
+	isPositive,
+	isBracket,
+	isOpposite,
+	isRadical,
+	isDifference,
+	isPower,
+	isQuotient,
+	isDivision,
+	isSum,
+	isProduct,
+	isProductPoint,
+	isProductImplicit,
+	isCos,
+	isSin,
+	isTan,
+	isLn,
+	isExp,
+	isLog,
 } from './types'
 
 import Decimal from 'decimal.js'
@@ -37,83 +38,64 @@ import Decimal from 'decimal.js'
 // à node
 // ???  est ce que les children ont déjà été évalués ?
 
-export default function evaluate(node: Expression, params: EvalArg): Decimal {
-	switch (node.type) {
-		case TYPE_NUMBER:
-			return node.value
+export default function evaluate(node: Node, params: EvalArg): Decimal {
+	if (isNumber(node)) {
+		return node.value
+	} else if (isSymbol(node)) {
+		throw new Error(`Le symbole ${node.symbol} doit être substitué.`)
+	} else if (isHole(node)) {
+		throw new Error(`Impossible d'évaluer une expression contenant un trou.`)
+	} else if (isPositive(node) || isBracket(node)) {
+		return evaluate(node.first, params)
+	} else if (isOpposite(node)) {
+		return evaluate(node.first, params).mul(-1)
+	} else if (isRadical(node)) {
+		return evaluate(node.first, params).sqrt()
+	} else if (isDifference(node)) {
+		return evaluate(node.first, params).sub(evaluate(node.last, params))
+	} else if (isPower(node)) {
+		return evaluate(node.first, params).pow(evaluate(node.last, params))
+	} else if (isQuotient(node) || isDivision(node)) {
+		return evaluate(node.first, params).div(evaluate(node.last, params))
+	} else if (isSum(node)) {
+		return node.children.reduce(
+			(sum, child) => sum.add(evaluate(child, params)),
+			new Decimal(0),
+		)
+	} else if (
+		isProduct(node) ||
+		isProductPoint(node) ||
+		isProductImplicit(node)
+	) {
+		return node.children.reduce(
+			(sum, child) => sum.mul(evaluate(child, params)),
+			new Decimal(1),
+		)
+	}
 
-		case TYPE_SYMBOL:
-			throw new Error(`Le symbole ${node.letter} doit être substitué.`)
-
-		case TYPE_HOLE:
-			throw new Error(`Impossible d'évaluer une expression contenant un trou.`)
-
-		case TYPE_POSITIVE:
-		case TYPE_BRACKET:
-			return evaluate(node.first, params)
-
-		case TYPE_OPPOSITE:
-			return evaluate(node.first, params).mul(-1)
-
-		case TYPE_RADICAL:
-			return evaluate(node.first, params).sqrt()
-
-		case TYPE_DIFFERENCE:
-			return evaluate(node.first, params).sub(evaluate(node.last, params))
-
-		case TYPE_POWER:
-			return evaluate(node.first, params).pow(evaluate(node.last, params))
-
-		case TYPE_QUOTIENT:
-		case TYPE_DIVISION:
-			return evaluate(node.first, params).div(evaluate(node.last, params))
-
-		case TYPE_SUM:
-			return node.children.reduce(
-				(sum, child) => sum.add(evaluate(child, params)),
-				new Decimal(0),
-			)
-
-		case TYPE_PRODUCT:
-		case TYPE_PRODUCT_IMPLICIT:
-		case TYPE_PRODUCT_POINT:
-			return node.children.reduce(
-				(sum, child) => sum.mul(evaluate(child, params)),
-				new Decimal(1),
-			)
-
-		// case TYPE_ABS: {
-		//   const v = evaluate(node.first, params)
-		//   if (v.isNegative()) {
-		//     return v.mul(-1)
-		//   } else {
-		//     return v
-		//   }
-		// }
-
-		case TYPE_COS: {
-			return evaluate(node.first, params).cos()
-		}
-
-		case TYPE_SIN: {
-			return evaluate(node.first, params).sin()
-		}
-
-		case TYPE_TAN: {
-			return evaluate(node.first, params).tan()
-		}
-
-		case TYPE_LN: {
-			return evaluate(node.first, params).ln()
-		}
-
-		case TYPE_EXP: {
-			return evaluate(node.first, params).exp()
-		}
-
-		default:
-			throw new Error(
-				'Exp non recognized for decimal evaluation : ' + node.string,
-			)
+	// case TYPE_ABS: {
+	//   const v = evaluate(node.first, params)
+	//   if (v.isNegative()) {
+	//     return v.mul(-1)
+	//   } else {
+	//     return v
+	//   }
+	// }
+	else if (isCos(node)) {
+		return evaluate(node.first, params).cos()
+	} else if (isSin(node)) {
+		return evaluate(node.first, params).sin()
+	} else if (isTan(node)) {
+		return evaluate(node.first, params).tan()
+	} else if (isLn(node)) {
+		return evaluate(node.first, params).ln()
+	} else if (isExp(node)) {
+		return evaluate(node.first, params).exp()
+	} else if (isLog(node)) {
+		return evaluate(node.first, params).log()
+	} else {
+		throw new Error(
+			'Exp non recognized for decimal evaluation : ' + node.string,
+		)
 	}
 }

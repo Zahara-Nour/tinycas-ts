@@ -40,10 +40,11 @@ import {
 	relations,
 	identifier,
 	limit,
+	productImplicit,
 } from './node'
-import { Expression, Lexer, Token, TYPE_PRODUCT_IMPLICIT, Unit } from './types'
+import { Lexer, Node, Token, Unit, ParserOptions, TemplateArg } from './types'
 import Decimal from 'decimal.js'
-import { unit } from './unit'
+import { unit } from './node'
 // import template from './template'
 
 // const SEMICOLON = token(';')
@@ -148,10 +149,6 @@ const SYMBOL = token('@[a-z]{1}')
 //  <Unit'> ::= .<ComposedUnit> | $
 //  <Composed=unit> ::= <SimpleUnit> (^(Integer | -Integer) | $)
 
-type ParserOptions = {
-	implicit: boolean
-}
-
 const defaultParserOptions: ParserOptions = {
 	implicit: true,
 }
@@ -182,35 +179,28 @@ function parser({ implicit }: ParserOptions = defaultParserOptions) {
 	}
 
 	function parseExpression() {
-		const e = parseRelations()
-		return e
+		return parseRelations()
 	}
 
-	function parseRelations(): Expression {
+	function parseRelations() {
 		const exps = []
-		const ops = []
+		type Comparator = '<' | '<=' | '>' | '>=' | '!=' | '='
+		const ops: Comparator[] = []
 		exps.push(parseMember())
-		let e: Expression
+		let e: Node
 		while (match(EQUAL) || match(NOTEQUAL) || match(COMP)) {
-			ops.push(_lexem)
+			ops.push(_lexem as Comparator)
 			exps.push(parseMember())
 		}
 		if (ops.length === 0) {
 			e = exps[0]
 		} else if (ops.length === 1) {
-			switch (ops[0]) {
-				case '!=':
-					e = unequality([exps[0], exps[1]])
-					break
-				case '=':
-					e = equality([exps[0], exps[1]])
-					break
-
-				case '<':
-				case '>':
-				case '<=':
-				case '>=':
-					e = inequality([exps[0], exps[1]], ops[0])
+			if (ops[0] === '!=') {
+				e = unequality([exps[0], exps[1]])
+			} else if (ops[0] === '=') {
+				e = equality([exps[0], exps[1]])
+			} else {
+				e = inequality([exps[0], exps[1]], ops[0])
 			}
 		} else {
 			e = relations(ops, exps)
@@ -218,10 +208,10 @@ function parser({ implicit }: ParserOptions = defaultParserOptions) {
 		return e
 	}
 
-	function parseMember(): Expression {
-		let e: Expression
-		let term: Expression
-		let sign: string
+	function parseMember() {
+		let e: Node
+		let term: Node
+		let sign = ''
 		// let unit
 
 		if (match(MINUS) || match(PLUS)) {
@@ -254,7 +244,7 @@ function parser({ implicit }: ParserOptions = defaultParserOptions) {
 		return e
 	}
 
-	function parseTerm(): Expression {
+	function parseTerm() {
 		let e = parseImplicitFactors()
 
 		while (match(TIMES) || match(DIV) || match(FRAC)) {
@@ -269,20 +259,21 @@ function parser({ implicit }: ParserOptions = defaultParserOptions) {
 		return e
 	}
 
-	function parseImplicitFactors({ localImplicit = true } = {}): Expression {
+	function parseImplicitFactors({ localImplicit = true } = {}) {
 		let e = parsePower()
-		let next: Expression
+		let next: Node | null
 		// produit implicite
 		if (implicit && localImplicit) {
 			do {
 				try {
 					next = parsePower()
 				} catch (error) {
-					if (error.message === ERROR_NO_VALID_ATOM) {
+					if ((error as Error).message === ERROR_NO_VALID_ATOM) {
 						// on doit continuer à parser l'expression car on peut tomber sur - ou +
 						next = null
 					} else {
-						throw new Error(error.message)
+						// throw new Error((error as Error).message)
+						throw error
 					}
 				}
 				if (next && next.isNumber()) {
@@ -291,15 +282,14 @@ function parser({ implicit }: ParserOptions = defaultParserOptions) {
 					// TODO: a verfier que ça ne pose pas de probleme avec les durées en HMS
 					throw new Error(ERROR_UNIT_IN_IMPLICIT_PRODUCT)
 				} else if (next) {
-					e = product([e, next], TYPE_PRODUCT_IMPLICIT)
+					e = productImplicit([e, next])
 				}
 			} while (next)
 		}
-
 		return e
 	}
 
-	function parsePower(): Expression {
+	function parsePower(): Node {
 		let e = parseAtom()
 
 		while (match(POW)) {
@@ -311,15 +301,17 @@ function parser({ implicit }: ParserOptions = defaultParserOptions) {
 		return e
 	}
 
-	function parseAtom(): Expression {
-		let e: Expression, func: string
-		let exclude: Expression[], excludeMin: Expression, excludeMax: Expression
+	function parseAtom(): Node {
+		let e: Node, func: string
+		let exclude: Node[],
+			excludeMin: Node | null = null,
+			excludeMax: Node | null = null
 
 		if (match(LIMIT)) {
 			const lim = _lexem
 
 			let sign: string
-			let children: Expression[]
+			let children: Node[]
 			if (lim[0] === 'i') {
 				sign = lim.substring(3) === 'plus' ? '+' : '-'
 				children = [symbol('inf')]
@@ -465,7 +457,7 @@ function parser({ implicit }: ParserOptions = defaultParserOptions) {
 					break
 
 				default:
-					e = null
+					throw new Error('function not recognized')
 			}
 			require(CLOSING_BRACKET)
 		}
@@ -473,15 +465,15 @@ function parser({ implicit }: ParserOptions = defaultParserOptions) {
 		else if (match(INTEGER_TEMPLATE)) {
 			const nature = _parts[2]
 			const relative = _parts[3]
-			const signed = relative && relative.includes('s')
+			const signed = !!relative && relative.includes('s')
 			exclude = []
-			const excludeMultiple: Expression[] = []
-			const excludeDivider: Expression[] = []
-			const excludeCommonDividersWith: Expression[] = []
-			let minDigit = hole()
-			let maxDigit = hole()
-			let min = hole()
-			let max = hole()
+			const excludeMultiple: Node[] = []
+			const excludeDivider: Node[] = []
+			const excludeCommonDividersWith: Node[] = []
+			let minDigit: Node = hole()
+			let maxDigit: Node = hole()
+			let min: Node = hole()
+			let max: Node = hole()
 
 			// $e : entier positif
 			// $en : entier négatif
@@ -534,44 +526,44 @@ function parser({ implicit }: ParserOptions = defaultParserOptions) {
 				}
 			}
 
-			e = template({
+			const argTemplate: TemplateArg = {
 				nature: '$' + nature,
-				relative,
+				relative: !!relative,
 				signed,
-				exclude: exclude.length ? exclude : null,
-				excludeMultiple: excludeMultiple.length ? excludeMultiple : null,
-				excludeDivider: excludeDivider.length ? excludeDivider : null,
-				excludeCommonDividersWith: excludeCommonDividersWith.length
-					? excludeCommonDividersWith
-					: null,
-				excludeMin,
-				excludeMax,
 				children: [minDigit, maxDigit, min, max],
-			})
+			}
+			if (exclude.length) argTemplate.exclude = exclude
+			if (excludeMultiple.length) argTemplate.excludeMultiple = excludeMultiple
+			if (excludeDivider.length) argTemplate.excludeDivider = excludeDivider
+			if (excludeCommonDividersWith.length)
+				argTemplate.excludeCommonDividersWith = excludeCommonDividersWith
+			if (excludeMin) argTemplate.excludeMin = excludeMin
+			if (excludeMax) argTemplate.excludeMax = excludeMax
+			e = template(argTemplate)
 		}
 		// decimal
 		else if (match(DECIMAL_TEMPLATE)) {
 			const nature = 'd'
 			const relative = _parts[2]
-			let integerPartN = hole() // digits number before comma
-			let integerPartMin = hole() // digits number before comma
-			let integerPartMax = hole() // digits number before comma
-			let decimalPartN = hole() // digits number after comma
-			let decimalPartMin = hole() // digits number after comma
-			let decimalPartMax = hole() // digits number after comma
+			let integerPartN: Node = hole() // digits number before comma
+			let integerPartMin: Node = hole() // digits number before comma
+			let integerPartMax: Node = hole() // digits number before comma
+			let decimalPartN: Node = hole() // digits number after comma
+			let decimalPartMin: Node = hole() // digits number after comma
+			let decimalPartMax: Node = hole() // digits number after comma
 
 			if (match(OPENING_CURLYBRACKET)) {
 				integerPartN = parseExpression()
 				if (match(DIV)) {
 					integerPartMin = integerPartN
-					integerPartN = null
+					integerPartN = hole()
 					integerPartMax = parseExpression()
 				}
 				if (match(SEMICOLON)) {
 					decimalPartN = parseExpression()
 					if (match(DIV)) {
 						decimalPartMin = decimalPartN
-						decimalPartN = null
+						decimalPartN = hole()
 						decimalPartMax = parseExpression()
 					}
 				}
@@ -579,7 +571,7 @@ function parser({ implicit }: ParserOptions = defaultParserOptions) {
 			}
 			e = template({
 				nature: '$' + nature,
-				relative,
+				relative: !!relative,
 				children: [
 					integerPartN,
 					decimalPartN,
@@ -635,26 +627,33 @@ function parser({ implicit }: ParserOptions = defaultParserOptions) {
 				}
 			}
 			// console.log('include parser:',include)
-			e = template({
+			// TODO: et  excludeCommonDividersWith ?
+			const argTemplate: TemplateArg = {
 				nature,
 				children: include,
-				exclude: exclude.length ? exclude : null,
-				excludeMultiple: excludeMultiple.length ? excludeMultiple : null,
-				excludeDivider: excludeDivider.length ? excludeDivider : null,
-				excludeMin,
-				excludeMax,
-			})
+			}
+			if (exclude.length) argTemplate.exclude = exclude
+			if (excludeMultiple.length) argTemplate.excludeMultiple = excludeMultiple
+			if (excludeDivider.length) argTemplate.excludeDivider = excludeDivider
+			// if (excludeCommonDividersWith.length)
+			// 	argTemplate.excludeCommonDividersWith = excludeCommonDividersWith
+			if (excludeMin) argTemplate.excludeMin = excludeMin
+			if (excludeMax) argTemplate.excludeMax = excludeMax
+
+			e = template(argTemplate)
 		} else if (match(VALUE_DECIMAL_TEMPLATE)) {
 			let precision = null
 			if (match(INTEGER)) {
 				precision = parseInt(_lexem, 10)
 			}
 			require(OPENING_CURLYBRACKET)
-			e = template({
+			const argTemplate: TemplateArg = {
 				nature: '$$',
-				precision,
 				children: [parseExpression()],
-			})
+			}
+			if (precision) argTemplate.precision = precision
+			e = template(argTemplate)
+
 			require(CLOSING_CURLYBRACKET)
 		} else if (match(VALUE_TEMPLATE)) {
 			require(OPENING_CURLYBRACKET)
@@ -755,7 +754,7 @@ function parser({ implicit }: ParserOptions = defaultParserOptions) {
 
 	return {
 		parse(input: string | number | Decimal) {
-			let e: Expression
+			let e: Node
 			if (typeof input === 'number' || Decimal.isDecimal(input)) {
 				e = number(input)
 			} else {
@@ -776,8 +775,8 @@ function parser({ implicit }: ParserOptions = defaultParserOptions) {
 					const message = `
 ${_input}
 ${place}
-${error.type}`
-					e = notdefined(error.message, message, input)
+${(error as Error).message}`
+					e = notdefined((error as Error).message, message, input)
 				}
 			}
 			return e

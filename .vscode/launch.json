@@ -16,7 +16,7 @@
 			"type": "node",
 			"request": "launch",
 			"name": "Debug Program",
-			"program": "${workspaceFolder}/src/index.ts",
+			"program": "${workspaceFolder}/debug/src/index.js",
 			"preLaunchTask": "tsc: build - tsconfig-debug.json",
 			"outFiles": ["${workspaceFolder}/debug/**/*.js"]
 		}

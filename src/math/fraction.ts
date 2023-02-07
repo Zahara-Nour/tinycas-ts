@@ -2,13 +2,16 @@
 
 import Decimal from 'decimal.js'
 import { CreateFractionArg, Fraction, FractionArg } from './types'
-import { pgcd } from '../utils/utils'
+import { pgcdDecimals } from '../utils/utils'
 
 function gcd(a: Decimal, b: Decimal) {
-	return pgcd([a, b])
+	return pgcdDecimals([a, b])
 }
 
-const pFraction = {
+const pFraction: Fraction = {
+	s: 1,
+	d: new Decimal(1),
+	n: new Decimal(1),
 	add(this: Fraction, f: Fraction) {
 		let n = this.n.mul(f.d).mul(this.s).add(this.d.mul(f.s).mul(f.n))
 		const d = this.d.mul(f.d)
@@ -124,16 +127,18 @@ function fraction(arg: FractionArg): Fraction {
 			'^([\\(\\{]?(-?\\d+)(\\.\\d+)?[\\)\\}]?)(\\/[\\(\\{]?(-?\\d+)[\\]\\}]?)?$',
 		)
 		const result = regex.exec(arg)
-		if (!result) {
+		if (result) {
+			const { n, d, s } = removeCommas(
+				parseFloat(result[1]),
+				result[5] ? parseFloat(result[5]) : 1,
+			)
+			return createFraction({ n, d, s })
+		} else {
 			// TODO: que faire dans ce cas ?
 			// console.log('parse fraction', arg, typeof arg)
+			// return null
+			throw new Error('fraction not recognized')
 		}
-		const { n, d, s } = removeCommas(
-			parseFloat(result[1]),
-			result[5] ? parseFloat(result[5]) : 1,
-		)
-
-		return createFraction({ n, d, s })
 	} else {
 		// console.log('arg ' + arg)
 		return fraction(arg.toString({ displayUnit: false }))

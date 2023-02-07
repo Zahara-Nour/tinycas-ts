@@ -1,9 +1,11 @@
 {
 	"compilerOptions": {
-		"target": "es6",
-		"module": "commonjs",
+		"target": "ES6",
+		"module": "CommonJS",
 		"outDir": "debug",
 		"sourceMap": true,
-		"sourceRoot": "src"
+		"sourceRoot": "src",
+		"esModuleInterop": true,
+		"moduleResolution": "node"
 	}
 }

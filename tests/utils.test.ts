@@ -1,6 +1,6 @@
 import { Decimal } from 'decimal.js'
 import {
-	pgcd,
+	pgcdDecimals,
 	primeFactors,
 	RadicalReduction,
 	// roundDecimal,
@@ -40,8 +40,8 @@ describe('Testing pgcd', () => {
 		[[new Decimal(18), new Decimal(24), new Decimal(30), new Decimal(42)], '6'],
 	]
 
-	test.each(t)('rounding %s', (numbers: Decimal[], expected: string) => {
-		expect(pgcd(numbers).toString()).toBe(expected)
+	test.each(t)('rounding %s', (numbers, expected) => {
+		expect(pgcdDecimals(numbers as Decimal[]).toString()).toBe(expected)
 	})
 })
 
@@ -60,7 +60,7 @@ describe('Testing prime factorization', () => {
 			],
 		],
 	]
-	test.each(t)('fatorize %s', (n: number, expected: [number, number][]) => {
-		expect(primeFactors(n)).toStrictEqual(expected)
+	test.each(t)('fatorize %s', (n, expected) => {
+		expect(primeFactors(n as number)).toStrictEqual(expected)
 	})
 })

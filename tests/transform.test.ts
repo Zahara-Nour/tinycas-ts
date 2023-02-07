@@ -43,8 +43,6 @@ describe('Testing template $', () => {
 	test.each(t)(' %s ', (e, expected) => {
 		const f = math(e)
 
-		const g = f.generate().string
-
 		expect(f.generate().string).toBe(expected)
 	})
 })

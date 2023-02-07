@@ -1,5 +1,9 @@
 import Decimal from 'decimal.js'
 import { math } from '../src/math/math'
+import {
+	ExpressionWithChildren,
+	isExpressionWithChildren,
+} from '../src/math/types'
 
 describe('Testing input value', () => {
 	test('accepts number values', () => {
@@ -17,34 +21,38 @@ describe('Testing input value', () => {
 
 describe('Testing tree', () => {
 	test('Root is set on children', () => {
-		const e = math('2*3+4')
-		expect(e.first.first.root).toBe(e)
+		const e = math('2*3+4') as ExpressionWithChildren
+		expect(isExpressionWithChildren(e.first) && e.first.first.root).toBe(e)
 	})
 
 	test('Testing setParent is set on children', () => {
-		let e = math('1+2')
+		let e = math('1+2') as ExpressionWithChildren
 		expect(e.first.string).toBe('1')
 		expect(e.first.parent).toBe(e)
 		expect(e.last.parent).toBe(e)
 
-		e = math('1*2')
+		e = math('1*2') as ExpressionWithChildren
 		expect(e.first.string).toBe('1')
 		expect(e.last.string).toBe('2')
 		expect(e.first.parent).toBe(e)
 		expect(e.last.parent).toBe(e)
 
-		e = math('1*2*3*4')
+		e = math('1*2*3*4') as ExpressionWithChildren
 		expect(e.first.string).toBe('1*2*3')
 		expect(e.first.parent).toBe(e)
 		expect(e.first.root).toBe(e)
-		expect(e.first.first.parent).toBe(e.first)
-		expect(e.first.first.root).toBe(e)
-		expect(e.first.last.parent).toBe(e.first)
-		expect(e.first.last.root).toBe(e)
+		expect(isExpressionWithChildren(e.first) && e.first.first.parent).toBe(
+			e.first,
+		)
+		expect(isExpressionWithChildren(e.first) && e.first.first.root).toBe(e)
+		expect(isExpressionWithChildren(e.first) && e.first.last.parent).toBe(
+			e.first,
+		)
+		expect(isExpressionWithChildren(e.first) && e.first.last.root).toBe(e)
 
 		expect(e.last.parent).toBe(e)
 
-		e = math('1+2+3+4')
+		e = math('1+2+3+4') as ExpressionWithChildren
 		expect(e.first.string).toBe('1+2+3')
 		expect(e.first.parent).toBe(e)
 		expect(e.last.parent).toBe(e)
@@ -315,5 +323,28 @@ describe('Testing detection of misplaced spaces', () => {
 	]
 	test.each(t)('%s has misplacedSpaces', (e, expected) => {
 		expect(math(e as string).searchMisplacedSpaces()).toBe(expected)
+	})
+})
+
+describe('Testing copy of expression with or without unit', () => {
+	const t = [
+		['1+2', '1+2'],
+		['1 cm+2cm', '1 cm+2 cm'],
+		['(1+2)cm', '(1+2) cm'],
+	]
+	test.each(t)('%s is correctly copied', (e, expected) => {
+		expect(math(e).copy().string).toBe(expected)
+	})
+})
+
+describe('Testing copyFromString of expression by removing unit', () => {
+	const t = [
+		['1+2', '1+2'],
+		['1cm', '1'],
+		// ['1 cm+2cm', '1 cm+2 cm'],
+		// ['(1+2)cm', '(1+2)'],
+	]
+	test.each(t)('%s is correctly copied', (e, expected) => {
+		expect(math(e).copyFromString(false).string).toBe(expected)
 	})
 })

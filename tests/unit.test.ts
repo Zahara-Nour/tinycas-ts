@@ -1,5 +1,5 @@
 import { math } from '../src/math/math'
-import { unit } from '../src/math/unit'
+import { unit } from '../src/math/node'
 
 describe('Stringing  unit', () => {
 	const t = [
@@ -11,7 +11,7 @@ describe('Stringing  unit', () => {
 	]
 
 	test.each(t)('Stringing %s %s', (e, u) => {
-		expect(math(e).unit.string).toBe(u)
+		expect(math(e).unit?.string).toBe(u)
 	})
 })
 

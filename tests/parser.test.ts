@@ -1,4 +1,5 @@
 import parser from '../src/math/parser'
+import { Bool } from '../src/math/types'
 
 describe('Parser interface', () => {
 	const p = parser()
@@ -412,12 +413,12 @@ describe('Parsing', () => {
 		let e = p.parse('true')
 		expect(e.string).toEqual('true')
 		expect(e.isBoolean()).toBeTruthy()
-		expect(e.isTrue()).toBeTruthy()
+		expect((e as Bool).isTrue()).toBeTruthy()
 
 		e = p.parse('false')
 		expect(e.string).toEqual('false')
 		expect(e.isBoolean()).toBeTruthy()
-		expect(e.isFalse()).toBeTruthy()
+		expect((e as Bool).isFalse()).toBeTruthy()
 	})
 
 	test('Parser parses templates', () => {

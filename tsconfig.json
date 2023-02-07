@@ -4,7 +4,8 @@
 		"declaration": true,
 		"target": "ES6",
 		"esModuleInterop": true,
-		"moduleResolution": "node"
+		"moduleResolution": "node",
+		"strict": true
 		// "noImplicitThis": true
 		// "allowJs": true
 	},

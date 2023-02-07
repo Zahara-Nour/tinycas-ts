@@ -21,7 +21,7 @@ function stringToken(pattern: string): StringToken {
 function regExToken(pattern: string): RegExToken {
 	const _pattern = pattern
 	let _lexem: string
-	let _parts: null | RegExpExecArray
+	let _parts: RegExpExecArray
 
 	return {
 		get pattern() {
@@ -39,7 +39,9 @@ function regExToken(pattern: string): RegExToken {
 
 			if (matched) {
 				_lexem = matched[0]
-				_parts = matched.length > 1 ? matched : null
+				if (matched.length > 1) {
+					_parts = matched
+				}
 			}
 			return matched !== null
 		},

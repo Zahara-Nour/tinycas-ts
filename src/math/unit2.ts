@@ -1,17 +1,16 @@
-import { symbol, number } from './node'
+import { symbol, number, hole } from './node'
 import {
 	conversionTable,
-	Expression,
+	Node,
 	Normal,
 	Unit,
 	TYPE_PRODUCT_POINT,
+	TYPE_UNIT,
 } from './types'
-
-const TYPE_UNIT = 'type unit'
 
 // une unité simple ou composée
 
-const PUnit = {
+const PUnit: Unit = {
 	mult(u: Unit) {
 		return unit(
 			this.u.mult(u.u, TYPE_PRODUCT_POINT),
@@ -22,7 +21,7 @@ const PUnit = {
 	div(u: Unit) {
 		return unit(this.u.div(u.u), this.normal.div(u.normal))
 	},
-	pow(n: Expression) {
+	pow(n: Node) {
 		//  n doit être un entier relatif
 		return unit(this.u.pow(n), this.normal.pow(n.normal))
 	},
@@ -52,21 +51,25 @@ const PUnit = {
 		// on compare les bases de la forme normale
 	},
 
-	getCoefTo(u: Unit): Expression {
+	getCoefTo(u: Unit): Node {
 		return this.normal.getCoefTo(u.normal).node
 	},
 
 	equalsTo(u: Unit): boolean {
 		return this.normal.equalsTo(u.normal)
 	},
+	type: TYPE_UNIT,
+	normal: hole().normal,
+	u: hole(),
 }
 
 /* 
 ne doit être appelée à l'extérieur que pour créer une unité simple. Les unités composées sont créées par multiplication, division ou exponentiation.
 */
-function unit(u: string, normal?: Normal) {
-	if (!normal) {
-		// c'est une unité simple
+function unit(u: string | Node, normal?: Normal) {
+	// if (!normal) {
+	if (typeof u === 'string') {
+		// c'est une unité simple créé avec une string
 		const coef = number(baseUnits[u][0])
 		const base = symbol(baseUnits[u][1])
 		normal = coef.mult(base).normal
@@ -74,7 +77,6 @@ function unit(u: string, normal?: Normal) {
 
 	const e: Unit = Object.create(PUnit)
 	Object.assign(e, {
-		type: TYPE_UNIT,
 		u: typeof u === 'string' ? symbol(u) : u,
 		normal,
 	})

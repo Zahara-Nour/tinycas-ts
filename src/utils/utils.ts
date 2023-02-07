@@ -67,7 +67,7 @@ const gcd2 = function (a: number, b: number): number {
 	return gcd2(b, a % b)
 }
 
-export function pgcd(numbers: Decimal[]): Decimal {
+export function pgcdDecimals(numbers: Decimal[]): Decimal {
 	switch (numbers.length) {
 		case 1:
 			return numbers[0]
@@ -89,10 +89,10 @@ export function pgcd(numbers: Decimal[]): Decimal {
 			break
 
 		default: {
-			const a = numbers.shift()
-			const b = numbers.shift()
-			numbers.unshift(pgcd([a, b]))
-			return pgcd(numbers)
+			const a = numbers.shift() as Decimal
+			const b = numbers.shift() as Decimal
+			numbers.unshift(pgcdDecimals([a, b]))
+			return pgcdDecimals(numbers)
 		}
 	}
 }
@@ -101,9 +101,8 @@ export function pgcd(numbers: Decimal[]): Decimal {
  * Randomly shuffle an array (in place shuffle)
  * https://stackoverflow.com/a/2450976/1293256
  * @param  {Array} array The array to shuffle
- * @return {String}      The first item in the shuffled array
  */
-export const shuffle = function (array) {
+export const shuffle = function <T>(array: Array<T>) {
 	let currentIndex = array.length
 	let temporaryValue, randomIndex
 

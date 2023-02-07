@@ -30,7 +30,6 @@ import {
 	TYPE_QUOTIENT,
 	TYPE_RADICAL,
 	TYPE_SEGMENT_LENGTH,
-	TYPE_SIMPLE_UNIT,
 	TYPE_SIN,
 	TYPE_SUM,
 	TYPE_SYMBOL,
@@ -40,11 +39,23 @@ import {
 	TYPE_UNIT,
 	TYPE_NPRODUCT,
 	TYPE_NSUM,
-	compareArg,
+	CompareArg,
 	NlistElement,
 	isNlist,
 	isExpression,
 	isNormal,
+	isNumber,
+	Numbr,
+	isSymbol,
+	isIdentifier,
+	isHole,
+	isTemplate,
+	isExpressionWithChildren,
+	ExpressionWithChildren,
+	isIncorrectExp,
+	IncorrectExp,
+	isLimit,
+	Limit,
 } from './types'
 /**
  * Un ordre doit être défini sur les expressions afin de créer les formes normales, qui permettent d'identifier
@@ -57,7 +68,7 @@ import {
  * renvoie -1 si node1 < node2
  */
 
-export default function compare(node1: compareArg, node2: compareArg) {
+export default function compare(node1: CompareArg, node2: CompareArg) {
 	let result: -1 | 0 | 1
 
 	const priorityList = [
@@ -90,7 +101,6 @@ export default function compare(node1: compareArg, node2: compareArg) {
 		TYPE_DIVISION,
 		TYPE_QUOTIENT,
 		TYPE_POWER,
-		TYPE_SIMPLE_UNIT,
 		TYPE_UNIT,
 		TYPE_EQUALITY,
 		TYPE_UNEQUALITY,
@@ -101,6 +111,7 @@ export default function compare(node1: compareArg, node2: compareArg) {
 		TYPE_ERROR,
 		TYPE_NSUM,
 		TYPE_NPRODUCT,
+		TYPE_LIMIT,
 	]
 
 	// TODO: et l'unité ?
@@ -110,6 +121,7 @@ export default function compare(node1: compareArg, node2: compareArg) {
 	) {
 		throw new Error(`type ${node1.type} forgotten`)
 	}
+
 	if (isNlist(node1) && isNlist(node2)) {
 		const i1 = node1[Symbol.iterator]()
 		const i2 = node2[Symbol.iterator]()
@@ -180,105 +192,62 @@ export default function compare(node1: compareArg, node2: compareArg) {
 	// on doit comparer des Expressions
 	else if (isExpression(node1) && isExpression(node2)) {
 		if (node1.type === node2.type) {
-			switch (node1.type) {
-				case TYPE_NUMBER:
-					if (node1.value.lt(node2.value)) {
-						return -1
-					} else if (node1.value.gt(node2.value)) {
-						return 1
-					}
+			if (isNumber(node1)) {
+				if (node1.value.lt((node2 as Numbr).value)) {
+					return -1
+				} else if (node1.value.gt((node2 as Numbr).value)) {
+					return 1
+				}
+				return 0
+			} else if (isSymbol(node1) || isIdentifier(node1)) {
+				if (node1.string < node2.string) {
+					return -1
+				} else if (node1.string > node2.string) {
+					return 1
+				} else {
 					return 0
-
-				case TYPE_SYMBOL:
-				case TYPE_IDENTIFIER:
-					if (node1.string < node2.string) {
-						return -1
-					} else if (node1.string > node2.string) {
-						return 1
-					} else {
-						return 0
-					}
-
-				case TYPE_HOLE:
-					return 0
-
-				case TYPE_TEMPLATE:
-					// TODO: implement
-					return 0
-
-				case TYPE_POSITIVE:
-				case TYPE_OPPOSITE:
-				case TYPE_PERCENTAGE:
-				case TYPE_SEGMENT_LENGTH:
-				case TYPE_BRACKET:
-				case TYPE_COS:
-				case TYPE_SIN:
-				case TYPE_TAN:
-				case TYPE_LN:
-				case TYPE_LOG:
-				case TYPE_EXP:
-				case TYPE_RADICAL:
-				case TYPE_FLOOR:
-				case TYPE_GCD:
-				case TYPE_MOD:
-				case TYPE_SUM:
-				case TYPE_DIFFERENCE:
-				case TYPE_PRODUCT:
-				case TYPE_PRODUCT_IMPLICIT:
-				case TYPE_PRODUCT_POINT:
-				case TYPE_DIVISION:
-				case TYPE_QUOTIENT:
-				case TYPE_POWER:
-				case TYPE_EQUALITY:
-				case TYPE_UNEQUALITY:
-				case TYPE_INEQUALITY_LESS:
-				case TYPE_INEQUALITY_LESSOREQUAL:
-				case TYPE_INEQUALITY_MORE:
-				case TYPE_INEQUALITY_MOREOREQUAL:
-					for (let i = 0; i < node1.children.length; i++) {
-						const comparaison = node1.children[i].compareTo(node2.children[i])
-						if (comparaison) return comparaison
-					}
-					return 0
-
-				case TYPE_SIMPLE_UNIT:
-				case TYPE_UNIT:
-					//  TODO:implement
-					return 0
-
-				case TYPE_ERROR:
-					if (node1.message < node2.message) {
-						return -1
-					} else if (node1.message > node2.message) {
-						return 1
-					}
-					return 0
-
-				case TYPE_LIMIT:
-					if (node1.first.isSymbol() && node2.first.isSymbol()) {
-						return node1.sign < node2.sign
+				}
+			} else if (isHole(node1) || isTemplate(node1)) {
+				return 0
+			} else if (isExpressionWithChildren(node1) && !isLimit(node1)) {
+				for (let i = 0; i < node1.children.length; i++) {
+					const comparaison = node1.children[i].compareTo(
+						(node2 as ExpressionWithChildren).children[i],
+					)
+					if (comparaison) return comparaison
+				}
+				return 0
+			} else if (isIncorrectExp(node1)) {
+				if (node1.message < (node2 as IncorrectExp).message) {
+					return -1
+				} else if (node1.message > (node2 as IncorrectExp).message) {
+					return 1
+				}
+				return 0
+			} else if (isLimit(node1)) {
+				if (node1.first.isSymbol() && (node2 as Limit).first.isSymbol()) {
+					return node1.sign < (node2 as Limit).sign
+						? -1
+						: node1.sign > (node2 as Limit).sign
+						? 1
+						: 0
+				} else if (node1.first.isSymbol()) {
+					return 1
+				} else if ((node2 as Limit).first.isSymbol()) {
+					return -1
+				} else {
+					if (node1.first.equals((node2 as Limit).first)) {
+						return node1.sign < (node2 as Limit).sign
 							? -1
-							: node1.sign > node2.sign
+							: node1.sign > (node2 as Limit).sign
 							? 1
 							: 0
-					} else if (node1.first.isSymbol()) {
-						return 1
-					} else if (node2.first.isSymbol()) {
-						return -1
 					} else {
-						if (node1.first.equals(node2.first)) {
-							return node1.sign < node2.sign
-								? -1
-								: node1.sign > node2.sign
-								? 1
-								: 0
-						} else {
-							return node1.first.compareTo(node2.first)
-						}
+						return node1.first.compareTo((node2 as Limit).first)
 					}
-
-				default:
-					throw new Error(`type ${node1.type} forgotten in the compare list`)
+				}
+			} else {
+				throw new Error(`type ${node1.type} forgotten in the compare list`)
 			}
 		} else {
 			return priorityList.indexOf(node1.type) < priorityList.indexOf(node2.type)
