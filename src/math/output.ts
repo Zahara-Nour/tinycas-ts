@@ -44,7 +44,7 @@ import {
 	TYPE_IDENTIFIER,
 	TYPE_LIMIT,
 	Expression,
-} from './types'
+} from './types.js'
 
 /* 
 Doit produire la même chaîne que celle qui été utilisée pour créer l'expression */

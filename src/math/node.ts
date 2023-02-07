@@ -1,8 +1,8 @@
-import evaluate from './evaluate'
-import fraction from './fraction'
-import normalize from './normal'
-import { text, latex, texmacs } from './output'
-import compare from './compare'
+import evaluate from './evaluate.js'
+import fraction from './fraction.js'
+import normalize from './normal.js'
+import { text, latex, texmacs } from './output.js'
+import compare from './compare.js'
 import {
 	substitute,
 	generate,
@@ -26,10 +26,10 @@ import {
 	shuffleTermsAndFactors,
 	derivate,
 	compose,
-} from './transform'
+} from './transform.js'
 import Decimal from 'decimal.js'
-import { math } from './math'
-import { unit } from './unit'
+import { math } from './math.js'
+import { unit } from './unit.js'
 import {
 	EvalArg,
 	Expression,
@@ -81,7 +81,7 @@ import {
 	TYPE_TIME,
 	TYPE_UNEQUALITY,
 	Unit,
-} from './types'
+} from './types.js'
 
 Decimal.set({
 	toExpPos: 89,

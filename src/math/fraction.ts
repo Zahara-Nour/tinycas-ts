@@ -1,8 +1,8 @@
 // const regex = new RegExp('^(\\(?(-?\\d+)(\\.\\d+)?\\)?)(/(-?\\d+))?$')
 
 import Decimal from 'decimal.js'
-import { CreateFractionArg, Fraction, FractionArg } from './types'
-import { pgcd } from '../utils/utils'
+import { CreateFractionArg, Fraction, FractionArg } from './types.js'
+import { pgcd } from '../utils/utils.js'
 
 function gcd(a: Decimal, b: Decimal) {
 	return pgcd([a, b])

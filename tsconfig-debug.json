@@ -1,9 +1,8 @@
 {
 	"compilerOptions": {
 		"target": "es6",
-		"module": "commonjs",
+		"module": "CommonJS",
 		"outDir": "debug",
-		"sourceMap": true,
-		"sourceRoot": "src"
+		"sourceMap": true
 	}
 }

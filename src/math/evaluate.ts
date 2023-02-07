@@ -21,7 +21,7 @@ import {
 	TYPE_EXP,
 	EvalArg,
 	Expression,
-} from './types'
+} from './types.js'
 
 import Decimal from 'decimal.js'
 

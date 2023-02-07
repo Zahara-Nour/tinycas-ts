@@ -1,4 +1,4 @@
-import { Lexer, RegExToken, StringToken, Token } from './types'
+import { Lexer, RegExToken, StringToken, Token } from './types.js'
 
 export class LexingError extends Error {}
 

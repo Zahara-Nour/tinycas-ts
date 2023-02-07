@@ -1,11 +1,11 @@
-import { symbol, number } from './node'
+import { symbol, number } from './node.js'
 import {
 	conversionTable,
 	Expression,
 	Normal,
 	Unit,
 	TYPE_PRODUCT_POINT,
-} from './types'
+} from './types.js'
 
 const TYPE_UNIT = 'type unit'
 

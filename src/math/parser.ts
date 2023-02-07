@@ -1,4 +1,4 @@
-import { token, lexer } from './lexer'
+import { token, lexer } from './lexer.js'
 
 import {
 	number,
@@ -40,10 +40,16 @@ import {
 	relations,
 	identifier,
 	limit,
-} from './node'
-import { Expression, Lexer, Token, TYPE_PRODUCT_IMPLICIT, Unit } from './types'
+} from './node.js'
+import {
+	Expression,
+	Lexer,
+	Token,
+	TYPE_PRODUCT_IMPLICIT,
+	Unit,
+} from './types.js'
 import Decimal from 'decimal.js'
-import { unit } from './unit'
+import { unit } from './unit.js'
 // import template from './template'
 
 // const SEMICOLON = token(';')

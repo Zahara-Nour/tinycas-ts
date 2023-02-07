@@ -51,21 +51,21 @@ import {
 	TYPE_NORMAL,
 	TYPE_NPRODUCT,
 	ToStringArg,
-} from './types'
+} from './types.js'
 
-import { boolean, radical, createNode, number, symbol } from './node'
+import { boolean, radical, createNode, number, symbol } from './node.js'
 
-import fraction from './fraction'
-import { math } from './math'
+import fraction from './fraction.js'
+import { math } from './math.js'
 import {
 	binarySearchCmp,
 	gcd,
 	pgcd,
 	primeFactors,
 	RadicalReduction,
-} from '../utils/utils'
-import compare from './compare'
-import { unit } from './unit'
+} from '../utils/utils.js'
+import compare from './compare.js'
+import { unit } from './unit.js'
 import Decimal from 'decimal.js'
 
 /* 

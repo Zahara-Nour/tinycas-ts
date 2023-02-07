@@ -45,7 +45,7 @@ import {
 	isNlist,
 	isExpression,
 	isNormal,
-} from './types'
+} from './types.js'
 /**
  * Un ordre doit être défini sur les expressions afin de créer les formes normales, qui permettent d'identifier
  * deux expressions équivalentes

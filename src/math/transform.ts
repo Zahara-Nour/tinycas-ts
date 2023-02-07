@@ -18,13 +18,13 @@ import {
 	TYPE_OPPOSITE,
 	TYPE_DIVISION,
 	TYPE_RADICAL,
-} from './types'
+} from './types.js'
 
-import { math } from './math'
+import { math } from './math.js'
 import Decimal from 'decimal.js'
-import { gcd, shuffle } from '../utils/utils'
-import { Expression } from './types'
-import { createNode, number, product, symbol } from './node'
+import { gcd, shuffle } from '../utils/utils.js'
+import { Expression } from './types.js'
+import { createNode, number, product, symbol } from './node.js'
 
 const constants = {
 	pi: '3.14',
