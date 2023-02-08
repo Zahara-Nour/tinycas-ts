@@ -287,6 +287,7 @@ describe('Testing evaluation of numerical expression with unit conversion', () =
 		['1 h 1 min 1 s + 1 h 1 min 1 s', 'HMS', '2 h 2 min 2 s'],
 		['2*(1 h 1 min 1 s)', 'HMS', '2 h 2 min 2 s'],
 		['2*(1 h 6 min)', 'h', '2.2 h'],
+		['2.2h', 'HMS', '2 h 12 min'],
 	]
 
 	test.each(t)('evaluating %s in %s :', (e, u, expected) => {
