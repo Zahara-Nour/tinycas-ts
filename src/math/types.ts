@@ -286,8 +286,9 @@ export type ExpressionWithChildren = Node & {
 	readonly last: Node
 }
 
+export type Sign = '+' | '-'
 export type Limit = ExpressionWithChildren & {
-	sign: string
+	sign: Sign
 	type: typeof TYPE_LIMIT
 }
 
@@ -500,17 +501,6 @@ export type Identifier = Node & {
 	type: typeof TYPE_IDENTIFIER
 	name: string
 }
-
-export type Expression =
-	| Bool
-	| Numbr
-	| Template
-	| SegmentLength
-	| IncorrectExp
-	| Identifier
-	| Symbl
-	| Hole
-	| ExpressionWithChildren
 
 export type Normal = {
 	readonly n: Nlist
@@ -983,7 +973,6 @@ export const TYPE_FLOOR = 'floor'
 export const TYPE_ABS = 'abs'
 export const TYPE_RADICAL = 'sqrt'
 export const TYPE_TIME = 'time'
-// export const TYPE_SIMPLE_TIME = 'simple_time'
 export const TYPE_IDENTIFIER = 'identifiant'
 export const TYPE_LIMIT = 'limit'
 

@@ -42,7 +42,15 @@ import {
 	limit,
 	productImplicit,
 } from './node'
-import { Lexer, Node, Token, Unit, ParserOptions, TemplateArg } from './types'
+import {
+	Lexer,
+	Node,
+	Token,
+	Unit,
+	ParserOptions,
+	TemplateArg,
+	Sign,
+} from './types'
 import Decimal from 'decimal.js'
 import { unit } from './unit'
 // import template from './template'
@@ -310,7 +318,7 @@ function parser({ implicit }: ParserOptions = defaultParserOptions) {
 		if (match(LIMIT)) {
 			const lim = _lexem
 
-			let sign: string
+			let sign: Sign
 			let children: Node[]
 			if (lim[0] === 'i') {
 				sign = lim.substring(3) === 'plus' ? '+' : '-'
