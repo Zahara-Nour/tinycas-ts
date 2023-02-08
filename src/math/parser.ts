@@ -161,16 +161,15 @@ const defaultParserOptions: ParserOptions = {
 	implicit: true,
 }
 
+// TODO: passer les options tout au long
 function parser({ implicit }: ParserOptions = defaultParserOptions) {
 	let _lex: Lexer
 	let _lexem: string
-	let _lastLexem: string
 	let _input: string
 	let _parts: RegExpExecArray
 
 	function match(t: Token) {
 		if (_lex.match(t)) {
-			_lastLexem = _lexem
 			_lexem = _lex.lexem
 			_parts = _lex.parts
 			return _lexem
@@ -694,21 +693,8 @@ function parser({ implicit }: ParserOptions = defaultParserOptions) {
 		else if (match(OPENING_CURLYBRACKET)) {
 			// TODO: rajouter dans options qu'il ne faut pas de nouvelles unités
 			e = parseExpression()
-			// console.log(e.string)
-			// console.log('require }', _input, _lex)
 			require(CLOSING_CURLYBRACKET)
-			// console.log('no error')
 		} else {
-			// TODO: ca a l'air d'être bon
-			// on doit lever une exception qui est récupérée dans les produits implicites
-			// TODO: est-ce que c'est vraiment possible ?
-			// if (_lexem === '-' && _lastLexem === '+') {
-			// 	console.log('erreur op')
-			// }
-			// if ('+-:*'.includes(_lexem) && '+-:*'.includes(_lastLexem)) {
-			// 	console.log('erreur op')
-			// }
-
 			throw new Error(ERROR_NO_VALID_ATOM)
 		}
 
