@@ -1,4 +1,5 @@
 import { math } from '../src/math/math'
+import { Unit } from '../src/math/types'
 import { unit } from '../src/math/unit'
 
 describe('Stringing  unit', () => {
@@ -111,13 +112,13 @@ describe('Testing normalizing unit', () => {
 
 describe('Testing unit isVolume', () => {
 	const t = [
-		// ['mm^3'],
-		// ['cm^3'],
-		// ['dm^3'],
-		// ['m^3'],
-		// ['dam^3'],
-		// ['hm^3'],
-		// ['km^3'],
+		['mm^3'],
+		['cm^3'],
+		['dm^3'],
+		['m^3'],
+		['dam^3'],
+		['hm^3'],
+		['km^3'],
 		['mL'],
 		['cL'],
 		['dL'],
@@ -128,7 +129,9 @@ describe('Testing unit isVolume', () => {
 	]
 
 	test.each(t)('Is %s a volume ?', (u) => {
-		expect(unit(u).isVolume()).toBeTruthy()
+		const unit = math('1' + u).unit
+		expect(unit).not.toBeNull
+		expect((math('1' + u).unit as Unit).isVolume()).toBeTruthy()
 	})
 
 	const t2 = [['mm'], ['g'], ['h']]
