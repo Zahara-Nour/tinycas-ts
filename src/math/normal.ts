@@ -17,7 +17,7 @@ import {
 import compare from './compare'
 import fraction from './fraction'
 import { math } from './math'
-import { boolean, number, radical, symbol } from './node'
+import { boolean, notdefined, number, radical, symbol } from './node'
 import {
 	Bool,
 	isAbs,
@@ -31,6 +31,7 @@ import {
 	isFloor,
 	isHole,
 	isIdentifier,
+	isIncorrectExp,
 	isInequalityLess,
 	isInequalityLessOrEqual,
 	isInequalityMore,
@@ -72,6 +73,7 @@ import {
 	Numbr,
 	ToNodeArg,
 	ToStringArg,
+	TYPE_ERROR,
 	TYPE_NORMAL,
 	TYPE_NPRODUCT,
 	TYPE_NSUM,
@@ -374,54 +376,69 @@ const pNormal: Normal = {
 	get d() {
 		return this._d as Nlist
 	},
+	isDefined() {
+		return this.type !== TYPE_ERROR
+	},
 	isZero() {
-		return this.n.isZero()
+		return this.isDefined() && this.n.isZero()
 	},
 
 	isInt() {
-		return this.node.isInt()
+		return this.isDefined() && this.node.isInt()
 	},
 
 	isOne() {
-		return this.node.isOne()
+		return this.isDefined() && this.node.isOne()
 	},
 
 	isProduct() {
-		return this.node.isProduct()
+		return this.isDefined() && this.node.isProduct()
 	},
 
 	isPower() {
-		return this.node.isPower()
+		return this.isDefined() && this.node.isPower()
 	},
 
 	isDivision() {
-		return this.node.isDivision()
+		return this.isDefined() && this.node.isDivision()
 	},
 
 	isQuotient() {
-		return this.node.isQuotient()
+		return this.isDefined() && this.node.isQuotient()
 	},
 
 	isOpposite() {
-		return this.node.isOpposite()
+		return this.isDefined() && this.node.isOpposite()
 	},
 
 	isMinusOne() {
-		return this.node.isMinusOne()
+		return this.isDefined() && this.node.isMinusOne()
 	},
 
 	isNumeric() {
-		return this.node.isNumeric()
+		return this.isDefined() && this.node.isNumeric()
 	},
 
 	isDuration() {
-		return !!this.unit && this.unit.isConvertibleTo(unit('s').normal())
+		return (
+			this.isDefined() &&
+			!!this.unit &&
+			this.unit.isConvertibleTo(unit('s').normal())
+		)
 	},
 	isLength() {
-		return !!this.unit && this.unit.isConvertibleTo(unit('m').normal())
+		return (
+			this.isDefined() &&
+			!!this.unit &&
+			this.unit.isConvertibleTo(unit('m').normal())
+		)
 	},
 	isMass() {
-		return !!this.unit && this.unit.isConvertibleTo(unit('g').normal())
+		return (
+			this.isDefined() &&
+			!!this.unit &&
+			this.unit.isConvertibleTo(unit('g').normal())
+		)
 	},
 
 	// test if two units are the same type
@@ -442,8 +459,10 @@ const pNormal: Normal = {
 
 	isSameQuantityType(e: Normal) {
 		return (
-			(!this.unit && !e.unit) ||
-			(!!this.unit && !!e.unit && this.unit.isConvertibleTo(e.unit))
+			this.isDefined() &&
+			e.isDefined() &&
+			((!this.unit && !e.unit) ||
+				(!!this.unit && !!e.unit && this.unit.isConvertibleTo(e.unit)))
 		)
 	},
 
@@ -479,6 +498,7 @@ const pNormal: Normal = {
 
 	// réduit une expression normale correspondant à une fraction numérique
 	reduce(this: Normal) {
+		if (!this.isDefined()) return this
 		// todo : vérifier que c'est bien une fraction numérique
 		function lookForPGCDinSum(s: Nlist) {
 			let n = new Decimal(0)
@@ -542,6 +562,8 @@ const pNormal: Normal = {
 	},
 
 	add(e: Normal) {
+		if (!this.isDefined()) return this
+		if (!e.isDefined()) return e
 		if (!this.isSameQuantityType(e)) {
 			throw new Error("Erreur d'unité")
 		}
@@ -554,9 +576,8 @@ const pNormal: Normal = {
 	},
 
 	sub(e: Normal) {
-		// console.log('e', e, e.unit)
-		// console.log('this', this, this.unit)
-
+		if (!this.isDefined()) return this
+		if (!e.isDefined()) return e
 		if (
 			(e.unit && this.unit && !e.unit.equalsTo(this.unit)) ||
 			(this.unit && !e.unit) ||
@@ -572,6 +593,8 @@ const pNormal: Normal = {
 
 	mult(exp: Normal | string | number | Decimal) {
 		const e = convertToNormal(exp)
+		if (!this.isDefined()) return this
+		if (!e.isDefined()) return e
 		let unit: Normal | undefined
 		if (this.unit && e.unit) unit = this.unit.mult(e.unit)
 		else if (this.unit) unit = this.unit
@@ -582,11 +605,15 @@ const pNormal: Normal = {
 	},
 
 	div(e: Normal) {
-		// TODO: prendre en compte le cas de la division par 0
+		if (!this.isDefined()) return this
+		if (!e.isDefined()) return e
+		if (e.equalsTo(0)) return createNotDefinedNormal('Division by zero')
 		return this.mult(e.invert())
 	},
 
 	pow(e: Normal) {
+		if (!this.isDefined()) return this
+		if (!e.isDefined()) return e
 		if (e.isZero()) return normOne(this.unit)
 		if (e.isOne()) return this
 		if (this.isZero()) return this
@@ -665,10 +692,12 @@ const pNormal: Normal = {
 	},
 
 	oppose() {
+		if (!this.isDefined()) return this
 		return normal(this.n.oppose(), this.d, this.unit)
 	},
 
 	invert() {
+		if (!this.isDefined()) return this
 		const unit = this.unit ? this.unit.invert() : undefined
 		let n: Nlist
 		let d: Nlist
@@ -687,6 +716,8 @@ const pNormal: Normal = {
 	},
 
 	compareTo(e: Normal) {
+		if (!this.isDefined()) return 1
+		if (!e.isDefined()) return -1
 		return compare(this, e)
 	},
 
@@ -697,6 +728,7 @@ const pNormal: Normal = {
 	//  si la forme représente une fraction numérique, celle-ci a été simplifiée et le signe
 	// est au numérateur
 	toNode({ formatTime }: ToNodeArg = defaultsToNode) {
+		if (!this.isDefined()) return notdefined(this.error as string)
 		let e: Node
 		let n = this.n.node
 		const d = this.d.node
@@ -751,11 +783,19 @@ const pNormal: Normal = {
 	},
 
 	equalsTo(exp: Normal | string | number) {
+		if (!this.isDefined()) return false
 		const e = convertToNormal(exp)
+		if (!e.isDefined()) return false
 		return this.n.mult(e.d).equalsTo(this.d.mult(e.n))
 	},
 }
 
+function createNotDefinedNormal(error: string) {
+	return Object.assign(Object.create(pNormal), {
+		type: TYPE_ERROR,
+		error,
+	})
+}
 function normal(n: Nlist, d: Nlist, unit?: Normal) {
 	const o = Object.create(pNormal)
 	if (!d) d = nSumOne()
@@ -863,7 +903,9 @@ export default function normalize(node: Node): Normal {
 	// const { unit, ...others } = node // ? est-ce qu'on se débarrasse de la forme normale?
 	// others.proto
 
-	if (isLimit(node)) {
+	if (isIncorrectExp(node)) {
+		e = createNotDefinedNormal('Incorrect expression')
+	} else if (isLimit(node)) {
 		n = nSum([[coefOne(), createBase(node)]])
 		d = nSumOne()
 	} else if (isTime(node)) {
@@ -1253,10 +1295,9 @@ export default function normalize(node: Node): Normal {
 
 	// TODO: et les TEMPLATES?
 	else {
-		throw new Error('!!!normalizing default !!! ' + node.string)
+		e = createNotDefinedNormal('Impossible to normalize ' + node.string)
 	}
 
-	// si e n'a pas été initialisé correctement
 	if (!e) {
 		e = normal(n, d)
 	}
@@ -1279,7 +1320,6 @@ export default function normalize(node: Node): Normal {
 			e.unit = u
 		}
 	}
-
 	return e
 }
 

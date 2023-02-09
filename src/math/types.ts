@@ -510,7 +510,9 @@ export type Normal = {
 	_n?: Nlist
 	_d?: Nlist
 	unit?: Normal
-	type: typeof TYPE_NORMAL
+	type: typeof TYPE_NORMAL | typeof TYPE_ERROR
+	error?: string
+	isDefined: () => boolean
 	isZero: () => boolean
 	isInt: () => boolean
 	isOne: () => boolean

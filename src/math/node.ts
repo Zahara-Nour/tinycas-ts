@@ -192,6 +192,7 @@ function createPNode(): Node {
 		type: TYPE_NOT_INITALIZED,
 		generated: [],
 		derivate(variable = 'x') {
+			if (isIncorrectExp(this)) return this
 			return derivate(this, variable)
 		},
 
@@ -201,6 +202,7 @@ function createPNode(): Node {
 		},
 
 		compose(g: Node, variable = 'x') {
+			if (isIncorrectExp(this)) return this
 			return compose(this, g, variable)
 		},
 
@@ -208,6 +210,7 @@ function createPNode(): Node {
 		reduce() {
 			// la fraction est déj
 			// on simplifie les signes.
+			if (isIncorrectExp(this)) return this
 			const b = this.removeSigns()
 			if (isExpressionWithChildren(b)) {
 				const negative = b.isOpposite()
@@ -400,20 +403,24 @@ function createPNode(): Node {
 		},
 
 		isDuration() {
+			if (isIncorrectExp(this)) return false
 			return (
 				this.isTime() || (!!this.unit && this.unit.isConvertibleTo(unit('s')))
 			)
 		},
 
 		isLength() {
+			if (isIncorrectExp(this)) return false
 			return !!this.unit && this.unit.isConvertibleTo(unit('m'))
 		},
 
 		isMass() {
+			if (isIncorrectExp(this)) return false
 			return !!this.unit && this.unit.isConvertibleTo(unit('g'))
 		},
 
 		isVolume() {
+			if (isIncorrectExp(this)) return false
 			return (
 				!!this.unit &&
 				(this.unit.isConvertibleTo(unit('m').mult(unit('m')).mult(unit('m'))) ||
@@ -422,16 +429,18 @@ function createPNode(): Node {
 		},
 
 		compareTo(e: Node) {
+			if (isIncorrectExp(this)) return -1
+			if (isIncorrectExp(e)) return 1
 			return compare(this, e)
 		},
 
-		isLowerThan(e: Node | string | number) {
+		isLowerThan(exp: Node | string | number | Decimal) {
+			if (isIncorrectExp(this)) return false
+			const e = convertToExp(exp)
+			if (isIncorrectExp(e)) return false
 			// TODO: wtf !!!!!
 			const e1 = this.normal.node
-			const e2 =
-				typeof e === 'string' || typeof e === 'number'
-					? math(e).normal.node
-					: e.normal.node
+			const e2 = e.normal.node
 			let result: boolean
 			try {
 				result = fraction(e1).isLowerThan(fraction(e2))
@@ -443,24 +452,24 @@ function createPNode(): Node {
 			return result
 		},
 
-		isLowerOrEqual(e: Node | string | number) {
-			if (typeof e === 'string' || typeof e === 'number') {
-				e = math(e)
-			}
+		isLowerOrEqual(exp: Node | string | number | Decimal) {
+			if (isIncorrectExp(this)) return false
+			const e = convertToExp(exp)
+			if (isIncorrectExp(e)) return false
 			return this.isLowerThan(e) || this.equals(e)
 		},
 
-		isGreaterThan(e: Node | string | number) {
-			if (typeof e === 'string' || typeof e === 'number') {
-				e = math(e)
-			}
+		isGreaterThan(exp: Node | string | number | Decimal) {
+			if (isIncorrectExp(this)) return false
+			const e = convertToExp(exp)
+			if (isIncorrectExp(e)) return false
 			return e.isLowerThan(this)
 		},
 
-		isGreaterOrEqual(e: Node | string | number) {
-			if (typeof e === 'string' || typeof e === 'number') {
-				e = math(e)
-			}
+		isGreaterOrEqual(exp: Node | string | number | Decimal) {
+			if (isIncorrectExp(this)) return false
+			const e = convertToExp(exp)
+			if (isIncorrectExp(e)) return false
 			return this.isGreaterThan(e) || this.equals(e)
 		},
 
@@ -484,13 +493,10 @@ function createPNode(): Node {
 			return this.string === e.string
 		},
 
-		equals(exp: Node | string | number) {
-			let e: Node
-			if (typeof exp === 'string' || typeof exp === 'number') {
-				e = math(exp)
-			} else {
-				e = exp
-			}
+		equals(exp: Node | string | number | Decimal) {
+			if (isIncorrectExp(this)) return false
+			const e = convertToExp(exp)
+			if (isIncorrectExp(e)) return false
 			// TODO: A revoir
 			if (isEquality(this)) {
 				return (
@@ -598,6 +604,7 @@ function createPNode(): Node {
 		},
 
 		toString(params?: ToStringArg) {
+			if (isIncorrectExp(this)) return this.error
 			return text(this, { ...toStringDefaults, ...(params || {}) })
 		},
 
@@ -652,12 +659,16 @@ function createPNode(): Node {
 		},
 
 		add(exp: Node | string | number | Decimal) {
+			if (isIncorrectExp(this)) return this
 			const e = convertToExp(exp)
+			if (isIncorrectExp(e)) return e
 			return sum([this, e])
 		},
 
 		sub(exp: Node | string | number | Decimal) {
+			if (isIncorrectExp(this)) return this
 			const e = convertToExp(exp)
+			if (isIncorrectExp(e)) return e
 			return difference([this, e])
 		},
 
@@ -668,7 +679,9 @@ function createPNode(): Node {
 				| typeof TYPE_PRODUCT_IMPLICIT
 				| typeof TYPE_PRODUCT_POINT = TYPE_PRODUCT,
 		) {
+			if (isIncorrectExp(this)) return this
 			const e = convertToExp(exp)
+			if (isIncorrectExp(e)) return e
 			if (type === TYPE_PRODUCT) {
 				return product([this, e])
 			} else if (type === TYPE_PRODUCT_IMPLICIT) {
@@ -679,74 +692,95 @@ function createPNode(): Node {
 		},
 
 		div(exp: Node | string | number | Decimal) {
+			if (isIncorrectExp(this)) return this
 			const e = convertToExp(exp)
+			if (isIncorrectExp(e)) return e
 			return division([this, e])
 		},
 
 		frac(exp: Node | string | number | Decimal) {
+			if (isIncorrectExp(this)) return this
 			const e = convertToExp(exp)
+			if (isIncorrectExp(e)) return e
 			return quotient([this, e])
 		},
 
 		oppose() {
+			if (isIncorrectExp(this)) return this
 			return opposite([this])
 		},
 
 		inverse() {
+			if (isIncorrectExp(this)) return this
 			return quotient([number(1), this])
 		},
 
 		radical() {
+			if (isIncorrectExp(this)) return this
 			return radical([this])
 		},
 
 		positive() {
+			if (isIncorrectExp(this)) return this
 			return positive([this])
 		},
 
 		bracket() {
+			if (isIncorrectExp(this)) return this
 			return bracket([this])
 		},
 
 		pow(exp: Node | string | number | Decimal) {
+			if (isIncorrectExp(this)) return this
 			const e = convertToExp(exp)
+			if (isIncorrectExp(e)) return e
 			return power([this, e])
 		},
 
 		floor() {
+			if (isIncorrectExp(this)) return this
 			return floor([this])
 		},
 
 		mod(exp: Node | string | number | Decimal) {
+			if (isIncorrectExp(this)) return this
 			const e = convertToExp(exp)
+			if (isIncorrectExp(e)) return e
 			return mod([this, e])
 		},
 
 		abs() {
+			if (isIncorrectExp(this)) return this
 			return abs([this])
 		},
 
 		exp() {
+			if (isIncorrectExp(this)) return this
 			return exp([this])
 		},
 
 		ln() {
+			if (isIncorrectExp(this)) return this
 			return ln([this])
 		},
 
 		log() {
+			if (isIncorrectExp(this)) return this
 			return log([this])
 		},
 
 		sin() {
+			if (isIncorrectExp(this)) return this
 			return sin([this])
 		},
 
 		cos() {
+			if (isIncorrectExp(this)) return this
 			return cos([this])
 		},
 
 		shallowShuffleTerms() {
+			if (isIncorrectExp(this)) return this
 			if (isSum(this) || isDifference(this)) {
 				return shallowShuffleTerms(this)
 			} else {
@@ -755,6 +789,7 @@ function createPNode(): Node {
 		},
 
 		shallowShuffleFactors() {
+			if (isIncorrectExp(this)) return this
 			if (isProduct(this)) {
 				return shallowShuffleFactors(this)
 			} else {
@@ -763,70 +798,87 @@ function createPNode(): Node {
 		},
 
 		shuffleTerms() {
+			if (isIncorrectExp(this)) return this
 			return shuffleTerms(this)
 		},
 
 		shuffleFactors() {
+			if (isIncorrectExp(this)) return this
 			return shuffleFactors(this)
 		},
 
 		shuffleTermsAndFactors() {
+			if (isIncorrectExp(this)) return this
 			return shuffleTermsAndFactors(this)
 		},
 
 		sortTerms() {
+			if (isIncorrectExp(this)) return this
 			return sortTerms(this)
 		},
 
 		shallowSortTerms() {
+			if (isIncorrectExp(this)) return this
 			return shallowSortTerms(this)
 		},
 
 		sortFactors() {
+			if (isIncorrectExp(this)) return this
 			return sortFactors(this)
 		},
 
 		shallowSortFactors() {
+			if (isIncorrectExp(this)) return this
 			return shallowSortFactors(this)
 		},
 
 		sortTermsAndFactors() {
+			if (isIncorrectExp(this)) return this
 			return sortTermsAndFactors(this)
 		},
 
 		reduceFractions() {
+			if (isIncorrectExp(this)) return this
 			return reduceFractions(this)
 		},
 
 		removeMultOperator() {
+			if (isIncorrectExp(this)) return this
 			return removeMultOperator(this)
 		},
 
 		removeUnecessaryBrackets(allowFirstNegativeTerm = false) {
+			if (isIncorrectExp(this)) return this
 			return removeUnecessaryBrackets(this, allowFirstNegativeTerm)
 		},
 
 		removeZerosAndSpaces() {
+			if (isIncorrectExp(this)) return this
 			return removeZerosAndSpaces(this)
 		},
 
 		removeSigns() {
+			if (isIncorrectExp(this)) return this
 			return removeSigns(this)
 		},
 
 		removeNullTerms() {
+			if (isIncorrectExp(this)) return this
 			return removeNullTerms(this)
 		},
 
 		removeFactorsOne() {
+			if (isIncorrectExp(this)) return this
 			return removeFactorsOne(this)
 		},
 
 		simplifyNullProducts() {
+			if (isIncorrectExp(this)) return this
 			return simplifyNullProducts(this)
 		},
 
 		searchUnecessaryZeros() {
+			if (isIncorrectExp(this)) return false
 			if (isNumber(this)) {
 				const regexs = [/^0\d+/, /[.,]\d*0$/]
 				const input = this.input
@@ -839,6 +891,7 @@ function createPNode(): Node {
 		},
 
 		searchMisplacedSpaces() {
+			if (isIncorrectExp(this)) return false
 			if (isNumber(this)) {
 				const [int, dec] = this.input.replace(',', '.').split('.')
 				let regexs = [
@@ -872,6 +925,7 @@ function createPNode(): Node {
    */
 
 		eval(params?: EvalArg) {
+			if (isIncorrectExp(this)) return this
 			// par défaut on veut une évaluation exacte (entier, fraction, racine,...)
 			params = { ...evalDefaults, ...params }
 			// on substitue récursivement car un symbole peut en introduire un autre. Exemple : a = 2 pi
@@ -950,6 +1004,7 @@ function createPNode(): Node {
 
 		// génère des valeurs pour les templates
 		generate() {
+			if (isIncorrectExp(this)) return this
 			// tableau contenant les valeurs générées pour  $1, $2, ....
 			this.root.generated = []
 			return generate(this)
@@ -968,11 +1023,14 @@ function createPNode(): Node {
 		// substituee les symboles
 		// certains symboles (pi, ..) sont résevés à des constantes
 		substitute(values: Record<string, string> = {}) {
+			if (isIncorrectExp(this)) return this
 			this.root.substitutionMap = { ...this.root.substitutionMap, ...values }
 			return substitute(this, values)
 		},
 
 		matchTemplate(t: Node) {
+			if (isIncorrectExp(this)) return false
+			if (isIncorrectExp(t)) return false
 			let n: number
 			let integerPart: number
 			let decimalPart: number

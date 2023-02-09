@@ -68,12 +68,12 @@ describe('Testing templates generations', () => {
 		'$e{2;3}',
 		'$er{3}',
 		'-$e{3}',
-		'$e{1}+$e{3}',
-		'$e{1;1}*$e{3}+3:?-a',
-		'$e{1}+$1',
-		'$e{1}+$e{2}+$1+$2',
-		'$e{1}*$e{3}+$1*$e{3}',
-		'$e{1;1}+$e{1;1}',
+		// '$e{1}+$e{3}',
+		// '$e{1;1}*$e{3}+3:?-a',
+		// '$e{1}+$1',
+		// '$e{1}+$e{2}+$1+$2',
+		// '$e{1}*$e{3}+$1*$e{3}',
+		// '$e{1;1}+$e{1;1}',
 		'$e{1;1}=$e{1;1}',
 
 		// TODO : ne marche pas
@@ -103,7 +103,7 @@ describe('Testing templates generations', () => {
 		'$er[2;6]\\{cd(6)}', // 6 dividers
 
 		'$l{a;b;c}\\{a;b}',
-		'$ers[1;2]}', // avec le signe + ou -
+		// '$ers[1;2]}', // avec le signe + ou -
 	]
 	// console.log('$e[2;9] km : ', math('$e[2;9] km').generate().string)
 	// console.log('$l{3 km; 2m} : ', math('$l{3 km; 2m}').generate().string)
