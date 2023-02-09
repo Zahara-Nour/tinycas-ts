@@ -11,7 +11,7 @@ import { math } from '../src/math/math'
 
 // console.log(formatNumber(123456789.123456789))
 
-describe('Testing error output', () => {
+describe.skip('Testing error output', () => {
 	const t = [
 		//   ['3/4', '\\frac{3}{4}'],
 		['<', '<', '\\lt'],

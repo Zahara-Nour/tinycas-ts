@@ -361,3 +361,10 @@ describe('Test relations evaluation', () => {
 		expect(math(e1).eval().string).toEqual(e2)
 	})
 })
+
+describe('Test evaluation errors', () => {
+	const t = [['1/0', 'Division by zero']]
+	test.each(t)(' %s raises error %s', (e1, e2) => {
+		expect(math(e1).eval().string).toEqual(e2)
+	})
+})
